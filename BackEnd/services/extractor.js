@@ -3,13 +3,14 @@ exports.extractFields = (text) => {
     invoiceNo: "N/A",
     total: "0.00",
     date: "N/A",
+    vendor: "Auto-Detected Vendor", // default vendor
     confidence: 0,
   };
 
-  // 1. INVOICE / ID PATTERNS (Works for Bill No, Invoice #, ID, etc.)
+  // 1. INVOICE / ID PATTERNS
   const invoicePatterns = [
     /(?:Invoice|Bill|ID|Statement|No)\s*(?:No|#|Number)?[:\s\n]*([A-Z0-9-]+)/i,
-    /Airtel\s*Black\s*ID\s*\n\s*(\d+)/i 
+    /Airtel\s*Black\s*ID\s*\n\s*(\d+)/i
   ];
 
   for (let pattern of invoicePatterns) {
@@ -17,14 +18,14 @@ exports.extractFields = (text) => {
     if (match && match[1] && match[1].length > 3) {
       fields.invoiceNo = match[1].trim();
       fields.confidence += 0.35;
-      break; 
+      break;
     }
   }
 
-  // 2. TOTAL AMOUNT PATTERNS (Works for Total, Payable, Amount Due, etc.)
+  // 2. TOTAL AMOUNT PATTERNS
   const totalPatterns = [
     /(?:Total|Amount|Payable|Due|Balance|Grand\s*Total)[:\s\n]*(?:₹|Rs\.?|USD|\$)?\s*([\d,]+\.\d{2})/i,
-    /₹\s*([\d,]+\.\d{2})/ 
+    /₹\s*([\d,]+\.\d{1,3}(?:,\d{3})*\.\d{2})/ 
   ];
 
   for (let pattern of totalPatterns) {
@@ -36,7 +37,7 @@ exports.extractFields = (text) => {
     }
   }
 
-  // 3. DATE PATTERNS (Works for 05 Nov 2025, 05/11/2025, etc.)
+  // 3. DATE PATTERNS
   const datePatterns = [
     /(?:Date|Issued|Statement|Billing)[:\s\n]*(\d{1,2}[-\/\s](?:[a-z]{3,10}|\d{1,2})[-\/\s]\d{2,4})/i,
     /(\d{1,2}\s+[A-Z]{3,}\s+\d{4})/i
@@ -50,6 +51,24 @@ exports.extractFields = (text) => {
       break;
     }
   }
+
+  // 4. VENDOR DETECTION (common telecoms/utility example)
+  if (/Airtel/i.test(text)) {
+    fields.vendor = "Airtel";
+    fields.confidence += 0.2;
+  } else if (/Jio/i.test(text)) {
+    fields.vendor = "Jio";
+    fields.confidence += 0.2;
+  } else if (/Vodafone|Vi/i.test(text)) {
+    fields.vendor = "Vodafone/Vi";
+    fields.confidence += 0.2;
+  } else if (/BSNL/i.test(text)) {
+    fields.vendor = "BSNL";
+    fields.confidence += 0.2;
+  }
+
+  // Cap confidence at 1
+  fields.confidence = Math.min(fields.confidence, 1);
 
   return fields;
 };
