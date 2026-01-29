@@ -1,11 +1,11 @@
-import { useState, useEffect } from "react"; // Added useEffect
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { Link, useNavigate, useSearchParams } from "react-router-dom"; // Added useSearchParams
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { LockKeyhole, Mail, ArrowRight, Loader2 } from "lucide-react";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams(); // Hook to read URL ?token=
+  const [searchParams] = useSearchParams();
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -14,14 +14,19 @@ export default function Login() {
   useEffect(() => {
     const token = searchParams.get("token");
     if (token) {
+      // Store the token immediately
       localStorage.setItem("token", token);
-      // We set a temporary user object; your App should fetch the real profile
-      // in a top-level useEffect using this token.
-      localStorage.setItem("user", JSON.stringify({ name: "Google User" }));
+      
+      // Temporary user object to prevent UI flicker before profile fetch
+      localStorage.setItem("user", JSON.stringify({ name: "Google User", email: "" }));
 
       console.log("🔑 [OAUTH] Google Session Initialized");
-      navigate("/dashboard");
-      window.location.reload();
+      
+      // Use replace: true to clean up the URL history (removes the token from address bar)
+      navigate("/dashboard", { replace: true });
+      
+      // Hard reload ensures all auth-dependent contexts/navbars update
+      window.location.reload(); 
     }
   }, [searchParams, navigate]);
 
@@ -32,10 +37,11 @@ export default function Login() {
         ? "http://localhost:5000"
         : "https://pdf2sheet-auto-invoice-extraction-system.onrender.com";
 
-    // Redirect browser to the backend OAuth route
+    // Standard redirect to the backend OAuth entry point
     window.location.href = `${backendBase}/auth/google`;
   };
 
+  // --- 3. MANUAL LOGIN HANDLER ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -44,12 +50,13 @@ export default function Login() {
     try {
       const res = await axios.post(
         "https://pdf2sheet-auto-invoice-extraction-system.onrender.com/auth/login",
-        form,
+        form
       );
 
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
+      // Explicitly handle spreadsheet_id to ensure Dashboard state is clean
       const sId = res.data.user.spreadsheetId || "";
       localStorage.setItem("spreadsheet_id", sId);
 
@@ -61,7 +68,6 @@ export default function Login() {
       setLoading(false);
     }
   };
-
   return (
     <div className="h-screen flex items-center justify-center bg-[#F8FAFC] p-4 font-sans">
       <div className="bg-white rounded-[2.5rem] shadow-2xl shadow-indigo-100 flex flex-col w-full max-w-md overflow-hidden border border-slate-200">
