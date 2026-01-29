@@ -13,14 +13,18 @@ export default function Login() {
   // --- 1. CATCH GOOGLE TOKEN FROM URL ---
   useEffect(() => {
     const token = searchParams.get("token");
-    if (token) {
+   if (token) {
+      // 2. Save the token to local storage
       localStorage.setItem("token", token);
-      // We set a temporary user object; your App should fetch the real profile
-      // in a top-level useEffect using this token.
+      
+      // 3. Set a placeholder user object
+      // (You should fetch the real profile via /auth/profile later)
       localStorage.setItem("user", JSON.stringify({ name: "Google User" }));
 
-      console.log("🔑 [OAUTH] Google Session Initialized");
-      navigate("/dashboard");
+      // 4. Redirect to the dashboard
+      console.log("🔑 [OAUTH] Token captured successfully!");
+      navigate("/dashboard", { replace: true });
+      // 5. Force a reload to update the Navbar state
       window.location.reload();
     }
   }, [searchParams, navigate]);
