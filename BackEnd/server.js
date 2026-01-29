@@ -18,26 +18,32 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
 
-// 3. Optimized CORS Configuration
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://pdf-2-sheet-auto-invoice-extraction.vercel.app"
-];
-
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allows requests with no origin (like mobile apps, curl, or server-side redirects)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log("\x1b[31m[CORS Blocked]\x1b[0m:", origin);
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  origin: "http://localhost:5173",
   credentials: true,
-}));
+}
+)); // Temporary: Allow all origins
+
+// 3. Optimized CORS Configuration
+// const allowedOrigins = [
+//   "http://localhost:5173",
+//   "https://pdf-2-sheet-auto-invoice-extraction.vercel.app"
+// ];
+
+// app.use(cors({
+//   origin: (origin, callback) => {
+//     // Allows requests with no origin (like mobile apps, curl, or server-side redirects)
+//     if (!origin || allowedOrigins.includes(origin)) {
+//       callback(null, true);
+//     } else {
+//       console.log("\x1b[31m[CORS Blocked]\x1b[0m:", origin);
+//       callback(new Error("Not allowed by CORS"));
+//     }
+//   },
+//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+//   allowedHeaders: ["Content-Type", "Authorization"],
+//   credentials: true,
+// }));
 
 // 4. Static File Serving (PDFs)
 // Added Access-Control-Allow-Origin to ensure PDF viewers on Vercel can read the files
