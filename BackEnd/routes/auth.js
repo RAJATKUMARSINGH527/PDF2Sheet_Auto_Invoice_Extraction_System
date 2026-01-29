@@ -3,40 +3,44 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const auth = require("../middleware/auth");
-const passport = require("passport"); 
+const passport = require("passport");
+
+// --- Helper for Beautiful Logs ---
+const log = {
+  info: (msg) => console.log(`\x1b[36m[INFO]\x1b[0m ${msg}`),
+  success: (msg) => console.log(`\x1b[32m[SUCCESS]\x1b[0m ${msg}`),
+  warn: (msg) => console.log(`\x1b[33m[WARN]\x1b[0m ${msg}`),
+  error: (msg) => console.log(`\x1b[31m[ERROR]\x1b[0m ${msg}`),
+  auth: (msg) => console.log(`\x1b[35m[AUTH]\x1b[0m ${msg}`)
+};
 
 // --- 1. GOOGLE OAUTH ROUTES ---
 
-/**
- * Initiates the Google OAuth flow.
- * Redirects the user to Google's consent screen.
- */
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+router.get("/google", (req, res, next) => {
+  log.auth("Redirecting user to Google Consent Screen...");
+  next();
+}, passport.authenticate("google", { scope: ["profile", "email"] }));
 
-/**
- * The callback route Google redirects to after user authorization.
- * This fixes the 404 error by providing a matching endpoint for your Google Console settings.
- */
 router.get("/google/callback", 
   passport.authenticate("google", { session: false, failureRedirect: "/login" }),
   (req, res) => {
     try {
-      // Generate a JWT for the authenticated user
+      log.success(`Google Auth Successful for: ${req.user.email}`);
+      
       const token = jwt.sign(
         { id: req.user._id }, 
         process.env.JWT_SECRET_KEY, 
         { expiresIn: "1d" }
       );
 
-      // Determine the redirect target based on the environment
       const frontendURL = process.env.NODE_ENV === "production" 
         ? process.env.Frontend_Deployed_URL 
         : process.env.Frontend_URL;
 
-      // Send the token back to the frontend via query parameters
+      log.info(`Handing off JWT to Frontend: ${frontendURL}`);
       res.redirect(`${frontendURL}/login?token=${token}`);
     } catch (err) {
-      console.error("OAuth Callback Error:", err);
+      log.error(`OAuth Callback Logic Failed: ${err.message}`);
       res.redirect(`${process.env.Frontend_URL}/login?error=auth_failed`);
     }
   }
@@ -46,10 +50,18 @@ router.get("/google/callback",
 router.get("/profile", auth, async (req, res) => {
   try {
     const userId = req.user?.id || req.user?.user?.id;
+    log.info(`Fetching profile for UserID: ${userId}`);
+
     const user = await User.findById(userId).select("-password");
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) {
+      log.warn(`Profile fetch failed: User ${userId} not found in DB`);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    log.success(`Profile dispatched for: ${user.email}`);
     res.json(user);
   } catch (err) {
+    log.error(`Profile Route Error: ${err.message}`);
     res.status(500).json({ error: "Server error fetching profile" });
   }
 });
@@ -60,16 +72,19 @@ router.post("/update-settings", auth, async (req, res) => {
     const { spreadsheetId, name } = req.body;
     const userId = req.user?.id || req.user?.user?.id;
     
-    console.log(`[BACKEND] Update request for ID: ${userId}`);
+    log.info(`Attempting settings update for UserID: ${userId}`);
 
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ success: false, error: "User not found" });
+    if (!user) {
+      log.warn(`Update failed: User ${userId} does not exist`);
+      return res.status(404).json({ success: false, error: "User not found" });
+    }
 
     if (name !== undefined) user.name = name.trim();
     if (spreadsheetId !== undefined) user.spreadsheetId = spreadsheetId.trim();
 
     await user.save();
-    console.log(`[BACKEND] Successfully updated: ${user.email}`);
+    log.success(`Settings updated successfully for: ${user.email}`);
 
     res.json({ 
       success: true, 
@@ -81,7 +96,7 @@ router.post("/update-settings", auth, async (req, res) => {
       }
     });
   } catch (err) {
-    console.error("[BACKEND ERROR]:", err.message);
+    log.error(`Settings Update Error: ${err.message}`);
     res.status(500).json({ success: false, error: "Database update failed" });
   }
 });
@@ -90,24 +105,33 @@ router.post("/update-settings", auth, async (req, res) => {
 router.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
   try {
+    log.info(`New Registration Attempt: ${email}`);
+
     if (!name || !email || !password) {
+      log.warn("Registration rejected: Missing required fields");
       return res.status(400).json({ error: "Please enter all fields" });
     }
 
     const normalizedEmail = email.toLowerCase().trim();
     let user = await User.findOne({ email: normalizedEmail });
-    if (user) return res.status(400).json({ error: "User already exists" });
+    
+    if (user) {
+      log.warn(`Registration rejected: Email ${normalizedEmail} already exists`);
+      return res.status(400).json({ error: "User already exists" });
+    }
 
     user = new User({ name: name.trim(), email: normalizedEmail, password });
     await user.save();
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "1d" });
+    log.success(`New user created: ${normalizedEmail}`);
 
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "1d" });
     res.status(201).json({
       token,
       user: { id: user._id, name: user.name, email: user.email, spreadsheetId: "" }
     });
   } catch (err) {
+    log.error(`Registration Error: ${err.message}`);
     res.status(500).json({ error: "Registration failed" });
   }
 });
@@ -116,18 +140,28 @@ router.post("/register", async (req, res) => {
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
+    log.info(`Login attempt for: ${email}`);
+
     if (!email || !password) {
+      log.warn("Login rejected: Missing credentials");
       return res.status(400).json({ error: "Please enter all fields" });
     }
 
     const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) return res.status(400).json({ error: "Invalid Credentials" });
+    if (!user) {
+      log.warn(`Login failed: No user found with email ${email}`);
+      return res.status(400).json({ error: "Invalid Credentials" });
+    }
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid Credentials" });
+    if (!isMatch) {
+      log.warn(`Login failed: Incorrect password for ${email}`);
+      return res.status(400).json({ error: "Invalid Credentials" });
+    }
+
+    log.success(`User logged in: ${user.email}`);
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "1d" });
-
     res.json({
       token,
       user: { 
@@ -138,6 +172,7 @@ router.post("/login", async (req, res) => {
       }
     });
   } catch (err) {
+    log.error(`Login Route Error: ${err.message}`);
     res.status(500).json({ error: "Login failed" });
   }
 });
