@@ -1,21 +1,33 @@
-import { useState } from "react";
-import { AlertCircle, CheckCircle2, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { AlertCircle, CheckCircle2, ArrowLeft, Loader2 } from "lucide-react";
+import { Link} from "react-router-dom";
 import PDFViewer from "../components/PDFViewer";
 import FieldList from "../components/FieldList";
 import ColumnMapper from "../components/ColumnMapper";
 
-
 export default function Mapping() {
-  const [invoice] = useState(() => {
+  const [invoice, setInvoice] = useState(null);
+  const [isReady, setIsReady] = useState(false);
+
+  // 1. FRESH LOAD LOGIC: Ensure we pull the latest invoice on every mount
+  useEffect(() => {
     const savedInvoice = localStorage.getItem("invoice");
-    try {
-      return savedInvoice ? JSON.parse(savedInvoice) : null;
-    } catch (e) {
-      console.error("Failed to parse invoice from storage", e);
-      return null;
+    if (savedInvoice) {
+      try {
+        const parsed = JSON.parse(savedInvoice);
+        Promise.resolve().then(() => setInvoice(parsed));
+        console.log("📄 [MAPPING] Loaded Invoice:", parsed.vendor);
+      } catch (e) {
+        console.error("Failed to parse invoice", e);
+      }
     }
-  });
+    Promise.resolve().then(() => setIsReady(true));
+
+    // CLEANUP: Optional - clear invoice from state when leaving to prevent ghosting
+    return () => setInvoice(null);
+  }, []);
+
+  if (!isReady) return null; // Prevent flicker
 
   if (!invoice) {
     return (
@@ -38,6 +50,7 @@ export default function Mapping() {
   const safePath = invoice.filePath?.replace(/\\/g, "/"); 
   const fileUrl = `http://localhost:5000/${safePath}`;
 
+  // Prepare fields object for child components
   const fields = {
     invoiceNo: invoice.invoiceNo || "N/A",
     date: invoice.date || "N/A",
@@ -46,10 +59,9 @@ export default function Mapping() {
   };
 
   return (
-    // FIX 1: Ensure the container takes exactly the remaining screen height
     <div className="h-[calc(100vh-64px)] bg-gray-50 flex flex-col overflow-hidden">
       
-      {/* Header - Fixed Height */}
+      {/* Header */}
       <div className="h-16 bg-white border-b px-8 flex justify-between items-center shadow-sm z-10 shrink-0">
         <div className="flex items-center gap-4">
           <Link to="/dashboard" className="p-2 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-indigo-600">
@@ -74,36 +86,42 @@ export default function Mapping() {
         </div>
       </div>
 
-      {/* Main Content - Grid with absolute height */}
+      {/* Main Content */}
       <div className="flex-1 grid grid-cols-12 overflow-hidden">
 
-        {/* Column 1: Document View (Fixed height, scroll handled inside PDFViewer) */}
+        {/* Column 1: Document View */}
         <div className="col-span-7 bg-slate-200 border-r border-gray-200 relative overflow-hidden">
-           <PDFViewer fileUrl={fileUrl} />
+           {/* Added key to PDFViewer to force reload when file changes */}
+           <PDFViewer key={fileUrl} fileUrl={fileUrl} />
         </div>
 
-        {/* Column 2: Sidebar (Nested Flexbox for perfect scrolling) */}
+        {/* Column 2: Sidebar */}
         <div className="col-span-5 flex flex-col bg-white overflow-hidden">
           
-          {/* AI Extraction - Takes only space needed, but can scroll if too long */}
-          <section className="p-8 border-b border-gray-100 shrink-0 max-h-[40%] overflow-y-auto scrollbar-hide">
+          {/* Section 1: AI Extraction */}
+          <section className="p-8 border-b border-gray-100 shrink-0 max-h-[40%] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">1. AI Extraction</h3>
               <span className="text-[10px] text-gray-400">Values read from PDF</span>
             </div>
-            <FieldList fields={fields} />
+            {/* Added key to FieldList to force reset on new invoice */}
+            <FieldList key={`fields-${invoice._id}`} fields={fields} />
           </section>
 
-          {/* Integration Mapping - Takes remaining space and enforces its own scroll */}
+          {/* Section 2: Destination Mapping */}
           <section className="flex-1 flex flex-col p-8 bg-indigo-50/20 overflow-hidden">
             <div className="flex items-center justify-between mb-4 shrink-0">
               <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest">2. Destination Mapping</h3>
               <span className="text-[10px] text-indigo-400 font-bold">Sheet Link Active</span>
             </div>
             
-            {/* Wrapper for the ColumnMapper component */}
             <div className="flex-1 min-h-0 bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
-              <ColumnMapper fields={fields} email={invoice.senderEmail} />
+              {/* Added key to ColumnMapper to force reset on new invoice */}
+              <ColumnMapper 
+                key={`mapper-${invoice._id}`} 
+                fields={fields} 
+                email={invoice.senderEmail} 
+              />
             </div>
           </section>
 

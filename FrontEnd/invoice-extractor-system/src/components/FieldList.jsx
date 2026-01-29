@@ -1,7 +1,22 @@
-import { Hash, Calendar, Banknote, Building2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { useEffect } from "react";
+import { Hash, Calendar, Banknote, Building2, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 
 export default function FieldList({ fields }) {
-  // Map icons to field keys for a more intuitive UI
+  // Debugging: Log whenever the fields change to ensure the component is receiving new data
+  useEffect(() => {
+    console.log("🔄 [FieldList] Data Reset/Updated:", fields);
+  }, [fields]);
+
+  // 1. Safety Check: If fields are null or empty (during reset), show a loader
+  if (!fields || Object.keys(fields).length === 0) {
+    return (
+      <div className="h-full flex flex-col items-center justify-center bg-white p-8 text-slate-400">
+        <Loader2 className="animate-spin mb-2" size={24} />
+        <p className="text-xs font-black uppercase tracking-widest">Awaiting Data...</p>
+      </div>
+    );
+  }
+
   const getIcon = (key) => {
     switch (key.toLowerCase()) {
       case "invoiceno": return <Hash size={16} />;
@@ -14,7 +29,6 @@ export default function FieldList({ fields }) {
 
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Scrollable Data Area */}
       <div className="flex-1 p-1 space-y-3 overflow-y-auto">
         {Object.entries(fields).map(([key, value]) => (
           <div
@@ -22,7 +36,6 @@ export default function FieldList({ fields }) {
             className="group relative flex items-center justify-between p-4 rounded-xl border border-gray-100 bg-white hover:border-indigo-200 hover:shadow-md hover:shadow-indigo-50/50 transition-all duration-200"
           >
             <div className="flex items-center gap-4">
-              {/* Icon Container */}
               <div className={`p-2 rounded-lg ${value ? 'bg-slate-50 text-slate-500' : 'bg-red-50 text-red-500'}`}>
                 {getIcon(key)}
               </div>
@@ -37,7 +50,6 @@ export default function FieldList({ fields }) {
               </div>
             </div>
 
-            {/* Status Indicator */}
             <div className="flex items-center">
               {value ? (
                 <CheckCircle2 size={16} className="text-green-500 opacity-40 group-hover:opacity-100 transition-opacity" />
@@ -51,7 +63,6 @@ export default function FieldList({ fields }) {
         ))}
       </div>
 
-      {/* Modern Footer Note */}
       <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
         <div className="flex items-start gap-3">
           <div className="p-1.5 bg-indigo-100 rounded text-indigo-600">
