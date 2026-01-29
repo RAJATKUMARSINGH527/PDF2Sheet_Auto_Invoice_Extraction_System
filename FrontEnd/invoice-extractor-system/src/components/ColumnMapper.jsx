@@ -47,10 +47,10 @@ export default function ColumnMapper({ fields, email }) {
 
       // 3. POST request
       const res = await axios.post(
-        "https://pdf2sheet-auto-invoice-extraction-system.onrender.com/vendor/save",
+        "https://pdf2sheet-auto-invoice-extraction-system.onrender.com/vendor/save",{
         payload,
-        { headers: { "x-auth-token": token } }
-      );
+        headers: { Authorization: `Bearer ${token}` },
+    });
 
       if (res.data) {
         alert(`✅ Template saved for ${finalVendorName}!`);

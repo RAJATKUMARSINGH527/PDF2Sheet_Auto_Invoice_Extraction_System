@@ -17,7 +17,7 @@ export default function History() {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get("https://pdf2sheet-auto-invoice-extraction-system.onrender.com/invoices/history", {
-          headers: { "x-auth-token": token }
+          headers: { Authorization: `Bearer ${token}` },
         });
         setInvoices(res.data);
       } catch (error) {

@@ -52,7 +52,7 @@ const handleSave = async () => {
     const payload = { spreadsheetId: sheetId, name: user.name };
 
     const res = await axios.post("https://pdf2sheet-auto-invoice-extraction-system.onrender.com/auth/update-settings", payload, {
-      headers: { "x-auth-token": token }
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     if (res.data.success) {

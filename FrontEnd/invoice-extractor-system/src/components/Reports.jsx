@@ -10,14 +10,14 @@ export default function Reports() {
   const navigate = useNavigate();
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filterType, setFilterType] = useState("monthly"); // "monthly" or "yearly"
+  const [filterType, setFilterType] = useState("monthly");
 
   useEffect(() => {
     const fetchReportData = async () => {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get("https://pdf2sheet-auto-invoice-extraction-system.onrender.com/invoices/history", {
-          headers: { "x-auth-token": token }
+          headers: { Authorization: `Bearer ${token}` },
         });
         setData(res.data);
       } catch (error) {
