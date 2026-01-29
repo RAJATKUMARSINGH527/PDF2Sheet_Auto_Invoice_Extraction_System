@@ -96,7 +96,7 @@ const analytics = useMemo(() => {
         navigate("/map"); 
       }
     } catch (error) {
-      alert(error.response?.data?.error || "Upload failed.");
+      alert(error.response?.data?.error || "Session expired.");
     } finally {
       setLoading(false);
     }
