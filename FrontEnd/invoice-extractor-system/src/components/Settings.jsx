@@ -27,11 +27,10 @@ useEffect(() => {
       });
       
       if (res.data) {
-        // Update the React state
+   
         setUser(res.data);
         setSheetId(res.data.spreadsheetId || "");
-        
-        // --- FORCE UPDATE LOCAL STORAGE ---
+
         localStorage.setItem("user", JSON.stringify(res.data));
         localStorage.setItem("spreadsheet_id", res.data.spreadsheetId || "");
         
@@ -51,29 +50,37 @@ const handleSave = async () => {
     const token = localStorage.getItem("token");
     const payload = { spreadsheetId: sheetId, name: user.name };
 
-    const res = await axios.post("https://pdf2sheet-auto-invoice-extraction-system.onrender.com/auth/update-settings", payload, {
-      headers: { Authorization: `Bearer ${token}` },
+    const res = await axios.post("http://localhost:5000/auth/update-settings", payload, {
+      headers: { "x-auth-token": token },
     });
 
     if (res.data.success) {
-      // 1. Update the full user object
-      const updatedUser = { ...user, name: res.data.name, spreadsheetId: res.data.spreadsheetId };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
+      // 1. Construct the updated user object using data returned from server
+      const updatedUser = { 
+        ...user, 
+        name: res.data.user.name, 
+        spreadsheetId: res.data.user.spreadsheetId 
+      };
       
-      // 2. Update the specific key the dashboard looks for
-      localStorage.setItem("spreadsheet_id", res.data.spreadsheetId);
+      // 2. Update all LocalStorage keys
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      localStorage.setItem("spreadsheet_id", res.data.user.spreadsheetId);
       
       // 3. Update local state
       setUser(updatedUser);
-      setSheetId(res.data.spreadsheetId);
+      setSheetId(res.data.user.spreadsheetId);
 
+      // 4. 🚀 THE FIX: Dispatch the custom event to update Navbar & Dashboard instantly
+      window.dispatchEvent(new Event("userUpdated"));
+      // Also dispatch standard storage event for cross-tab sync
       window.dispatchEvent(new Event("storage"));
+
       setMessage({ type: "success", text: "Configuration Saved!" });
     }
-  }catch (error) {
-      console.error("Save Settings Error:", error);
-      setMessage({ type: "error", text: "Save failed." });
-    } finally {
+  } catch (error) {
+    console.error("Save Settings Error:", error);
+    setMessage({ type: "error", text: "Save failed. Please try again." });
+  } finally {
     setIsSaving(false);
   }
 };

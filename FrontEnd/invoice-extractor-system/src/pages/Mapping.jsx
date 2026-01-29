@@ -79,23 +79,23 @@ if (!invoice) {
 }
 
 
-// const safePath = invoice.filePath?.replace(/\\/g, "/");  
+const safePath = invoice.filePath?.replace(/\\/g, "/");  
 
-// const fileUrl = `http://localhost:5000/${safePath}`;
+const fileUrl = `http://localhost:5000/${safePath}`;
 
 
 // 1. Sanitize the path
-const safePath = invoice.filePath?.replace(/\\/g, "/"); 
+// const safePath = invoice.filePath?.replace(/\\/g, "/"); 
 
 // 2. Determine the Base URL
 // Checks if the app is running on localhost; otherwise, uses the Render URL
-const isLocal = window.location.hostname === "localhost";
-const baseUrl = isLocal 
-  ? "http://localhost:5000" 
-  : "https://pdf2sheet-auto-invoice-extraction-system.onrender.com";
+// const isLocal = window.location.hostname === "localhost";
+// const baseUrl = isLocal 
+//   ? "http://localhost:5000" 
+//   : "https://pdf2sheet-auto-invoice-extraction-system.onrender.com";
 
 // 3. Construct the final URL
-const fileUrl = `${baseUrl}/${safePath}`;
+// const fileUrl = `${baseUrl}/${safePath}`;
 
   // Prepare fields object for child components
   const fields = {

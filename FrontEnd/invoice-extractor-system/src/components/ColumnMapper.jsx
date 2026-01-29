@@ -45,26 +45,36 @@ export default function ColumnMapper({ fields, email }) {
 
       console.log("📡 [MAPPER] Saving template:", payload);
 
-      // 3. POST request
+      // 3. FIXED POST request: Data and Headers must be separate arguments
       const res = await axios.post(
-        "https://pdf2sheet-auto-invoice-extraction-system.onrender.com/vendor/save",{
-        payload,
-        headers: { Authorization: `Bearer ${token}` },
-    });
+        "http://localhost:5000/vendor/save", 
+        payload, // Argument 2: The Data
+        {
+          headers: { 
+            "Authorization": `Bearer ${token}`, // Use standard Bearer format
+            "x-auth-token": token 
+          } 
+        } // Argument 3: The Config
+      );
 
       if (res.data) {
         alert(`✅ Template saved for ${finalVendorName}!`);
-        // Trigger a storage event if you need other components to refresh
         window.dispatchEvent(new Event("storage")); 
       }
     } catch (error) {
+      // Direct correction of your error logging
       console.error("❌ Mapping Save Error:", error.response?.data || error.message);
-      alert(error.response?.data?.msg || "Failed to save mapping template");
+      
+      // If the error is specifically a 401, guide the user
+      if (error.response?.status === 401) {
+        alert("Session expired or No Token. Please log in again.");
+      } else {
+        alert(error.response?.data?.msg || "Failed to save mapping template");
+      }
     } finally {
       setSaving(false);
     }
   };
-
   const columns = ["Invoice Number", "Date", "Total", "Vendor", "Notes"];
 
   // Safety check for empty fields
