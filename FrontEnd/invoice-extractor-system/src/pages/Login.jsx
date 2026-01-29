@@ -13,18 +13,14 @@ export default function Login() {
   // --- 1. CATCH GOOGLE TOKEN FROM URL ---
   useEffect(() => {
     const token = searchParams.get("token");
-   if (token) {
-      // 2. Save the token to local storage
+    if (token) {
       localStorage.setItem("token", token);
-      
-      // 3. Set a placeholder user object
-      // (You should fetch the real profile via /auth/profile later)
+      // We set a temporary user object; your App should fetch the real profile
+      // in a top-level useEffect using this token.
       localStorage.setItem("user", JSON.stringify({ name: "Google User" }));
 
-      // 4. Redirect to the dashboard
-      console.log("🔑 [OAUTH] Token captured successfully!");
-      navigate("/dashboard", { replace: true });
-      // 5. Force a reload to update the Navbar state
+      console.log("🔑 [OAUTH] Google Session Initialized");
+      navigate("/dashboard");
       window.location.reload();
     }
   }, [searchParams, navigate]);
@@ -60,7 +56,7 @@ export default function Login() {
       navigate("/dashboard");
       window.location.reload();
     } catch (err) {
-      setError(err.response?.data?.error || "Invalid credentials.");
+      setError(err.response?.data?.error || "Invalid credentials. Please check your email and password.");
     } finally {
       setLoading(false);
     }
