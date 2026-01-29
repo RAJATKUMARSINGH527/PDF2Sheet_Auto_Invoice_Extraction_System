@@ -70,7 +70,7 @@ exports.sendSuccessEmail = async (recipientEmail, invoiceData) => {
                     </div>
 
                     <div style="text-align: center;">
-                      <a href="${process.env.FRONTEND_URL || '#'}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">View in Dashboard</a>
+                      <a href="${process.env.Frontend_Deployed_URL || '#'}" style="background-color: #4f46e5; color: #ffffff; padding: 14px 28px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 14px; display: inline-block;">View in Dashboard</a>
                     </div>
                   </td>
                 </tr>
