@@ -10,16 +10,30 @@ const app = express();
 // 1. Database Connection with Debugging
 connectDB();
 
-// 2. Middleware
 app.use(cors({
-  origin: "http://localhost:5173", // Ensure this matches your Vite/React port
-  credentials: true
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      "http://localhost:5173",
+      "https://pdf-2-sheet-auto-invoice-extraction.vercel.app"
+    ];
+    console.log("CORS Origin Check:", origin);
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.log("Blocked by CORS:", origin);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
 }));
+
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// 3. STATIC FILE SERVING FIX: Forces PDFs to open IN-BROWSER
+// 3. STATIC FILE SERVING: Forces PDFs to open IN-BROWSER
 app.use("/uploads", (req, res, next) => {
   res.setHeader("Content-Disposition", "inline");
   res.setHeader("Content-Type", "application/pdf");
@@ -40,11 +54,9 @@ app.use((req, res, next) => {
 });
 
 // 5. Routes
-// Make sure you include your auth routes for the JWT flow we built
 app.use("/auth", require("./routes/auth")); 
 app.use("/upload", require("./routes/upload"));
 app.use("/vendor", require("./routes/vendor"));
-// Add a route for fetching history if you created routes/invoices.js
 app.use("/invoices", require("./routes/invoices"));
 
 // 6. Root Endpoint
@@ -56,7 +68,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// 7. Global Error Handler (Beautiful Error Messages)
+// 7. Global Error Handler 
 app.use((err, req, res, next) => {
   console.error(`\x1b[31m[ERROR]\x1b[0m ${err.message}`);
   res.status(err.status || 500).json({
