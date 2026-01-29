@@ -29,24 +29,54 @@ export default function Mapping() {
 
   if (!isReady) return null; // Prevent flicker
 
-  if (!invoice) {
-    return (
-      <div className="h-screen flex flex-col items-center justify-center bg-gray-50 p-6">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center max-w-sm">
-          <AlertCircle className="w-12 h-12 text-amber-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-800">No Invoice Loaded</h2>
-          <p className="text-gray-500 mt-2">Please upload a PDF from the dashboard to start mapping.</p>
-          <Link 
-            to="/dashboard" 
-            className="mt-6 inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 transition"
-          >
-            <ArrowLeft size={18} /> Go to Dashboard
-          </Link>
+if (!invoice) {
+  return (
+    <div className="relative h-screen flex items-center justify-center bg-[#f8fafc] overflow-hidden px-6">
+      {/* Soft Background Blobs for Modern Depth */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-100/40 blur-[100px]" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-100/40 blur-[100px]" />
+
+      <div className="relative z-10 w-full max-w-md">
+        <div className="bg-white/80 backdrop-blur-2xl border border-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] rounded-[2.5rem] p-12 text-center">
+          
+          {/* Animated Icon Container */}
+          <div className="relative mx-auto w-24 h-24 mb-10 group">
+            <div className="absolute inset-0 bg-indigo-100 rounded-[2rem] rotate-6 group-hover:rotate-12 transition-transform duration-500 ease-out" />
+            <div className="absolute inset-0 bg-indigo-600 rounded-[2rem] flex items-center justify-center shadow-xl shadow-indigo-200 group-hover:scale-105 transition-transform duration-500">
+              <Loader2 className="w-10 h-10 text-white animate-[spin_3s_linear_infinite]" />
+            </div>
+            <div className="absolute -bottom-2 -right-2 bg-amber-400 p-2 rounded-full border-4 border-white shadow-md">
+              <AlertCircle className="w-4 h-4 text-white" />
+            </div>
+          </div>
+
+          {/* Typography */}
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-3">
+            Workspace Empty
+          </h2>
+          <p className="text-slate-500 text-[15px] leading-relaxed mb-10 px-2">
+            We couldn't find an active invoice in your session. Head back to the dashboard to select a document for mapping.
+          </p>
+
+          {/* Actions */}
+          <div className="space-y-4">
+            <Link 
+              to="/dashboard" 
+              className="flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-600 hover:-translate-y-1 transition-all duration-300 active:scale-95 shadow-lg shadow-slate-200"
+            >
+              <ArrowLeft size={18} strokeWidth={3} />
+              Back to Dashboard
+            </Link>
+            
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+              Awaiting Document Input
+            </p>
+          </div>
         </div>
       </div>
-    );
-  }
-
+    </div>
+  );
+}
   const safePath = invoice.filePath?.replace(/\\/g, "/"); 
   const fileUrl = `http://localhost:5000/${safePath}`;
 
