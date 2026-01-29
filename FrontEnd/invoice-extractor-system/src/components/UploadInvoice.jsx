@@ -62,7 +62,7 @@ export default function UploadInvoice() {
         return;
       }
 
-      const res = await axios.post("http://localhost:5000/upload", formData, {
+      const res = await axios.post("https://pdf2sheet-auto-invoice-extraction-system.onrender.com/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
           "x-auth-token": token, 

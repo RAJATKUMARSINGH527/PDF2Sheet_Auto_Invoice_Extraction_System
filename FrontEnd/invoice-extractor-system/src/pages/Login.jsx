@@ -15,7 +15,7 @@ export default function Login() {
     setError("");
 
     try {
-      const res = await axios.post("http://localhost:5000/auth/login", form);
+      const res = await axios.post("https://pdf2sheet-auto-invoice-extraction-system.onrender.com/auth/login", form);
       
       // 1. Save core auth data
       localStorage.setItem("token", res.data.token);

@@ -15,7 +15,7 @@ export default function SignUp() {
     setError("");
 
     try {
-      const res = await axios.post("http://localhost:5000/auth/register", form);
+      const res = await axios.post("https://pdf2sheet-auto-invoice-extraction-system.onrender.com/auth/register", form);
       
       // Store token and the full user object (including spreadsheetId if returned)
       localStorage.setItem("token", res.data.token);

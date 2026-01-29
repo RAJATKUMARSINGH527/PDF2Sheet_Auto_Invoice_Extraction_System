@@ -35,7 +35,7 @@ export default function Dashboard() {
     const fetchHistory = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/invoices/history", {
+        const res = await axios.get("https://pdf2sheet-auto-invoice-extraction-system.onrender.com/invoices/history", {
           headers: { "x-auth-token": token }
         });
         setHistory(res.data);
@@ -84,7 +84,7 @@ const analytics = useMemo(() => {
 
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5000/upload/", form, {
+      const res = await axios.post("https://pdf2sheet-auto-invoice-extraction-system.onrender.com/upload/", form, {
         headers: { 
           "Content-Type": "multipart/form-data",
           "x-auth-token": token 

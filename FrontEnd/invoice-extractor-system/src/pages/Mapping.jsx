@@ -41,8 +41,8 @@ if (!invoice) {
           
           {/* Animated Icon Container */}
           <div className="relative mx-auto w-24 h-24 mb-10 group">
-            <div className="absolute inset-0 bg-indigo-100 rounded-[2rem] rotate-6 group-hover:rotate-12 transition-transform duration-500 ease-out" />
-            <div className="absolute inset-0 bg-indigo-600 rounded-[2rem] flex items-center justify-center shadow-xl shadow-indigo-200 group-hover:scale-105 transition-transform duration-500">
+            <div className="absolute inset-0 bg-indigo-100 rounded-4xl rotate-6 group-hover:rotate-12 transition-transform duration-500 ease-out" />
+            <div className="absolute inset-0 bg-indigo-600 rounded-4xl flex items-center justify-center shadow-xl shadow-indigo-200 group-hover:scale-105 transition-transform duration-500">
               <Loader2 className="w-10 h-10 text-white animate-[spin_3s_linear_infinite]" />
             </div>
             <div className="absolute -bottom-2 -right-2 bg-amber-400 p-2 rounded-full border-4 border-white shadow-md">
@@ -77,8 +77,25 @@ if (!invoice) {
     </div>
   );
 }
-  const safePath = invoice.filePath?.replace(/\\/g, "/"); 
-  const fileUrl = `http://localhost:5000/${safePath}`;
+
+
+// const safePath = invoice.filePath?.replace(/\\/g, "/");  
+
+// const fileUrl = `http://localhost:5000/${safePath}`;
+
+
+// 1. Sanitize the path
+const safePath = invoice.filePath?.replace(/\\/g, "/"); 
+
+// 2. Determine the Base URL
+// Checks if the app is running on localhost; otherwise, uses the Render URL
+const isLocal = window.location.hostname === "localhost";
+const baseUrl = isLocal 
+  ? "http://localhost:5000" 
+  : "https://pdf2sheet-auto-invoice-extraction-system.onrender.com";
+
+// 3. Construct the final URL
+const fileUrl = `${baseUrl}/${safePath}`;
 
   // Prepare fields object for child components
   const fields = {
