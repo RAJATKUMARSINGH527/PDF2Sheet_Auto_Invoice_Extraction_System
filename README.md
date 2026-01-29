@@ -17,7 +17,7 @@ PDF2Sheet Auto is a full-stack MERN (MongoDB, Express, React, Node.js) applicati
 
 1. **Clone the Repo**
    ```bash
-   git clone [https://github.com/RAJATKUMARSINGH527/PDF2Sheet_Auto_Invoice_Extraction_System.git](https://github.com/RAJATKUMARSINGH527/PDF2Sheet_Auto_Invoice_Extraction_System.git)
+   git clone https://github.com/RAJATKUMARSINGH527/PDF2Sheet_Auto_Invoice_Extraction_System.git
    cd PDF2Sheet_Auto_Invoice_Extraction_System
    ```
 2. **Backend Setup**
@@ -38,7 +38,7 @@ PDF2Sheet Auto is a full-stack MERN (MongoDB, Express, React, Node.js) applicati
     Open your browser and navigate to `http://localhost:5000` to access the PDF2Sheet Auto dashboard.
 
 ## 🤖 AI Integration
-The backend leverages OpenAI's GPT-4 API to intelligently parse invoice PDFs. The AI model is fine-tuned to recognize common invoice formats and extract relevant fields with high accuracy.
+The backend leverages PDF-PARSER library to intelligently parse invoice PDFs. The AI model is fine-tuned to recognize common invoice formats and extract relevant fields with high accuracy.
 
 ## 📄 Documentation
 Detailed documentation for both frontend and backend components can be found in their respective README files within the `frontend` and `backend` directories.
