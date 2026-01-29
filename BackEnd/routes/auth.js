@@ -3,11 +3,48 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const auth = require("../middleware/auth");
+const passport = require("passport"); 
 
-// --- 1. GET PROFILE ---
+// --- 1. GOOGLE OAUTH ROUTES ---
+
+/**
+ * Initiates the Google OAuth flow.
+ * Redirects the user to Google's consent screen.
+ */
+router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+
+/**
+ * The callback route Google redirects to after user authorization.
+ * This fixes the 404 error by providing a matching endpoint for your Google Console settings.
+ */
+router.get("/google/callback", 
+  passport.authenticate("google", { session: false, failureRedirect: "/login" }),
+  (req, res) => {
+    try {
+      // Generate a JWT for the authenticated user
+      const token = jwt.sign(
+        { id: req.user._id }, 
+        process.env.JWT_SECRET_KEY, 
+        { expiresIn: "1d" }
+      );
+
+      // Determine the redirect target based on the environment
+      const frontendURL = process.env.NODE_ENV === "production" 
+        ? process.env.Frontend_Deployed_URL 
+        : process.env.Frontend_URL;
+
+      // Send the token back to the frontend via query parameters
+      res.redirect(`${frontendURL}/login?token=${token}`);
+    } catch (err) {
+      console.error("OAuth Callback Error:", err);
+      res.redirect(`${process.env.Frontend_URL}/login?error=auth_failed`);
+    }
+  }
+);
+
+// --- 2. GET PROFILE ---
 router.get("/profile", auth, async (req, res) => {
   try {
-    // Safety check for middleware user object
     const userId = req.user?.id || req.user?.user?.id;
     const user = await User.findById(userId).select("-password");
     if (!user) return res.status(404).json({ error: "User not found" });
@@ -17,12 +54,10 @@ router.get("/profile", auth, async (req, res) => {
   }
 });
 
-// --- 2. UPDATE SETTINGS (Independent Name & SpreadsheetID Update) ---
+// --- 3. UPDATE SETTINGS ---
 router.post("/update-settings", auth, async (req, res) => {
   try {
     const { spreadsheetId, name } = req.body;
-    
-    // Safety check: Extract ID regardless of middleware structure
     const userId = req.user?.id || req.user?.user?.id;
     
     console.log(`[BACKEND] Update request for ID: ${userId}`);
@@ -30,26 +65,14 @@ router.post("/update-settings", auth, async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ success: false, error: "User not found" });
 
-    // Independent Logic: Update only if field is provided in the request
-    if (name !== undefined) {
-      user.name = name.trim();
-    }
-    
-    // spreadsheetId can be an empty string, so we check for undefined
-    if (spreadsheetId !== undefined) {
-      user.spreadsheetId = spreadsheetId.trim();
-    }
+    if (name !== undefined) user.name = name.trim();
+    if (spreadsheetId !== undefined) user.spreadsheetId = spreadsheetId.trim();
 
-    // Save triggers the password middleware check in models/User.js
     await user.save();
-
     console.log(`[BACKEND] Successfully updated: ${user.email}`);
 
-    // Return the full updated user object to sync Frontend LocalStorage
     res.json({ 
       success: true, 
-      name: user.name, 
-      spreadsheetId: user.spreadsheetId,
       user: {
         id: user._id,
         name: user.name,
@@ -63,7 +86,7 @@ router.post("/update-settings", auth, async (req, res) => {
   }
 });
 
-// --- 3. REGISTER ROUTE ---
+// --- 4. REGISTER ROUTE ---
 router.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
   try {
@@ -78,11 +101,7 @@ router.post("/register", async (req, res) => {
     user = new User({ name: name.trim(), email: normalizedEmail, password });
     await user.save();
 
-    const token = jwt.sign(
-      { id: user._id }, 
-      process.env.JWT_SECRET_KEY, 
-      { expiresIn: "1d" }
-    );
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "1d" });
 
     res.status(201).json({
       token,
@@ -93,7 +112,7 @@ router.post("/register", async (req, res) => {
   }
 });
 
-// --- 4. LOGIN ROUTE ---
+// --- 5. LOGIN ROUTE ---
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
   try {
@@ -107,11 +126,7 @@ router.post("/login", async (req, res) => {
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: "Invalid Credentials" });
 
-    const token = jwt.sign(
-      { id: user._id }, 
-      process.env.JWT_SECRET_KEY, 
-      { expiresIn: "1d" }
-    );
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "1d" });
 
     res.json({
       token,
