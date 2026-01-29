@@ -61,7 +61,7 @@ export default function Navbar() {
                 <div className="flex flex-col items-end">
                   <span className="text-xs font-semibold text-gray-700">Hi, <b>{user.name}</b></span>
                   <span className="text-[10px] text-green-500 flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse"></span> Online
+                    <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse"></span> Connected
                   </span>
                 </div>
                 <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white font-bold text-xs shadow-md uppercase">
