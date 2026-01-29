@@ -1,14 +1,12 @@
 const { google } = require("googleapis");
 require("dotenv").config();
 
-// Initialize OAuth2 Client
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
   process.env.GOOGLE_CLIENT_SECRET,
   process.env.GOOGLE_REDIRECT_URI
 );
 
-// Set credentials
 oAuth2Client.setCredentials({
   refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
 });
@@ -18,35 +16,38 @@ const sheets = google.sheets({
   auth: oAuth2Client,
 });
 
-/**
- * Appends invoice data to a Google Sheet
- */
-exports.appendInvoice = async (spreadsheetId, invoice) => {
+exports.appendInvoice = async (userSpreadsheetId, invoice) => {
   try {
-    // 1. Clean the ID (Force it from .env to be 100% sure)
-    const targetId = (process.env.SPREADSHEET_ID || spreadsheetId || "").trim();
+    const targetId = (userSpreadsheetId || process.env.SPREADSHEET_ID || "").trim();
 
     if (!targetId) {
-      throw new Error("Spreadsheet ID is missing from .env");
+      throw new Error("No Google Spreadsheet ID found for this user.");
     }
 
-    console.log(`\x1b[36m[Sheets Service]:\x1b[0m Pushing to ID: ${targetId}`);
+    // DEBUG LOG: Ensure we see what is being sent to Sheets
+    console.log(`\x1b[36m[Sheets Service]:\x1b[0m Syncing ${invoice.vendor || 'Unknown'} to ID: ${targetId}`);
 
-    // 2. Prepare the data row
+    // Create current timestamp
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('en-IN'); // DD/MM/YYYY
+    const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    // 1. DATA EXTRACTION: Robust handling for Airtel (mapping) vs Amazon (standard)
+    // This ensures data is never "undefined" which can cause column shifts
     const row = [
-      invoice.invoiceNo || "N/A",
-      invoice.date || "N/A",
-      invoice.total || "0.00",
+      invoice.invoiceNo || (invoice.mapping ? invoice.mapping.invoiceNo : "N/A"),
+      invoice.date || (invoice.mapping ? invoice.mapping.date : "N/A"),
+      invoice.total || (invoice.mapping ? invoice.mapping.total : 0),
       invoice.senderEmail || "N/A",
-      invoice.vendor || "Airtel",
-      new Date().toLocaleString()
+      invoice.vendor || (invoice.mapping ? invoice.mapping.vendorName : "Unknown Vendor"),
+      dateStr, // Column F
+      timeStr  // Column G
     ];
 
-    // 3. The Append Call
-    // IMPORTANT: Make sure the tab at the bottom of your sheet is named EXACTLY 'Sheet1'
+    // 2. APPEND CALL: Use A:G range
     const response = await sheets.spreadsheets.values.append({
       spreadsheetId: targetId,
-      range: "Sheet1!A:F", // Points to columns A to F on tab "Sheet1"
+      range: "Sheet1!A:G", // Ensure your sheet has columns up to G
       valueInputOption: "USER_ENTERED",
       insertDataOption: "INSERT_ROWS",
       requestBody: {
@@ -54,22 +55,12 @@ exports.appendInvoice = async (spreadsheetId, invoice) => {
       },
     });
 
-    console.log("✔ Row successfully added to Google Sheets");
+    console.log(`\x1b[32m✔ Row added at ${timeStr}\x1b[0m`);
     return response;
 
   } catch (err) {
     const errMsg = err.response?.data?.error?.message || err.message;
-    
-    console.error("❌ Google Sheets Error Details:", errMsg);
-
-    if (errMsg.includes("Requested entity was not found")) {
-      console.log("\n\x1b[41m CRITICAL CHECK \x1b[0m");
-      console.log("The File ID is correct (testSheets.js proved it).");
-      console.log("The problem is the TAB NAME at the bottom of your Google Sheet.");
-      console.log("👉 ACTION: Rename the tab at the bottom to exactly 'Sheet1' (No spaces!)");
-      console.log("\x1b[41m----------------\x1b[0m\n");
-    }
-
+    console.error("❌ Sheets Sync Failed:", errMsg);
     throw new Error(errMsg);
   }
 };

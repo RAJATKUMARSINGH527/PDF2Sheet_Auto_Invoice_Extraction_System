@@ -7,9 +7,7 @@ const auth = require("../middleware/auth");
 router.get("/history", auth, async (req, res) => {
   try {
     // Find invoices where the 'user' field matches the logged-in user's ID
-    const invoices = await Invoice.find({ userId: req.user.id })
-      .sort({ createdAt: -1 }) // Show newest first
-      .limit(10);
+    const invoices = await Invoice.find({ userId: req.user.id }).sort({ createdAt: -1 });
     
     res.json(invoices);
   } catch (err) {

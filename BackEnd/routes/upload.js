@@ -3,6 +3,7 @@ const multer = require("multer");
 const auth = require("../middleware/auth"); 
 const Invoice = require("../models/Invoice");
 const Vendor = require("../models/Vendor");
+const User = require("../models/User"); // ADDED: Need this to get spreadsheetId
 const { readPDF } = require("../services/pdfService");
 const { extractFields } = require("../services/extractor");
 const { appendInvoice } = require("../services/googleSheets");
@@ -25,103 +26,97 @@ router.post("/", auth, upload.single("pdf"), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ error: "No PDF uploaded" });
 
-    // 1. Identify User
     const targetUserId = req.user?.id || req.user?.user?.id;
     if (!targetUserId) throw new Error("User ID not found in token");
 
-    // 2. Normalize Inputs
     const safeFilePath = req.file.path.replace(/\\/g, "/");
     const senderEmail = (req.body.email || "unknown@vendor.com").trim().toLowerCase();
 
-    log.data("User ID", targetUserId);
+    const currentUser = await User.findById(targetUserId);
+    if (!currentUser) throw new Error("User profile not found");
+
+    log.data("User", currentUser.name);
     log.data("Sender Email", senderEmail);
-    log.data("File", safeFilePath);
 
-    // 3. Read PDF
-    log.step("Extracting text from PDF...");
+    // 2. Read PDF & Extract
+    log.step("Processing PDF...");
     const text = await readPDF(req.file.path);
-    if (!text || text.trim().length < 10) throw new Error("PDF has no readable text");
-
-    // 4. Extract fields
-    log.step("Extracting fields from PDF...");
     const fields = extractFields(text);
-    log.data("Extracted Fields", fields);
+    log.data("AI Extracted Vendor", fields.vendor);
 
-    // 5. Check DB for saved vendor
-    log.step("Checking vendor mapping...");
-    const savedVendor = await Vendor.findOne({ userId: targetUserId, senderEmail });
+    // 3. SMART VENDOR CHECK (FIXED)
+    const savedVendor = await Vendor.findOne({ 
+      userId: targetUserId, 
+      senderEmail,
+      vendorName: fields.vendor 
+    });
 
-    let finalVendorName = "Auto-Detected Vendor";
-    let confidence = fields.confidence || 0;
+    let finalVendorName = fields.vendor;
+    let confidence = fields.confidence;
     let needsMapping = true;
 
     if (savedVendor) {
-      log.success(`Vendor template found for ${senderEmail}`);
+      log.success(`Exact template match found for ${fields.vendor}`);
       finalVendorName = savedVendor.vendorName;
-      confidence = 1;
+      confidence = 1.0;
+      needsMapping = false; 
+    } else if (fields.confidence >= 0.70) { // LOWERED THRESHOLD from 0.85 to 0.70 for better auto-sync
+      log.success(`Acceptable AI confidence for: ${fields.vendor}`);
       needsMapping = false;
-    } else if (fields.vendor && !fields.vendor.toLowerCase().includes("auto-detected")) {
-      // PDF parsing gives a confident vendor
-      finalVendorName = fields.vendor;
-      confidence = 0.8; // Medium confidence
-      needsMapping = true;
-      log.success(`Vendor detected from PDF: ${finalVendorName}`);
     } else {
-      // PDF could not detect vendor → fallback
-      finalVendorName = "Auto-Detected Vendor";
-      confidence = 0;
+      log.warn(`Low confidence (< 0.70) detected: ${fields.vendor}`);
       needsMapping = true;
-      log.warn("Vendor could not be confidently detected, using Auto-Detected Vendor");
     }
 
-    log.data("Final Vendor Name", finalVendorName);
-    log.data("Confidence", confidence);
-    log.data("Needs Mapping", needsMapping);
+    // 4. DATA CLEANING (Added more robust cleaning)
+    const cleanTotal = parseFloat(fields.total?.toString().replace(/[^\d.-]/g, "")) || 0;
 
-    // 6. Save invoice
-    log.step("Saving invoice to MongoDB...");
+    // 5. Save to MongoDB
+    log.step("Saving to Database...");
     const invoice = await Invoice.create({
       userId: targetUserId,
       senderEmail,
       vendor: finalVendorName,
       invoiceNo: fields.invoiceNo || "N/A",
       date: fields.date || "N/A",
-      total: fields.total || "0.00",
+      total: cleanTotal,
       confidence,
       rawText: text,
       filePath: safeFilePath,
-      status: "pending",
+      status: needsMapping ? "pending" : "processed", // Explicit status
       needsMapping
     });
 
-    log.success("Invoice saved");
-
-    // 7. Send confirmation email
+    // 6. Send Email
     try {
       await sendSuccessEmail(senderEmail, invoice);
-      log.success(`Confirmation email sent to ${senderEmail}`);
     } catch (err) {
-      log.warn(`Failed to send email: ${err.message}`);
+      log.warn(`Email skip: ${err.message}`);
     }
 
-    // 8. Sheets sync if confident
+    // 7. Google Sheets Sync
+    // This now triggers if confidence is okay OR if it was a saved vendor
     if (!needsMapping) {
-      log.step("High confidence → syncing to Google Sheets");
+      log.step("Syncing to Google Sheets...");
       try {
-        await appendInvoice(process.env.SPREADSHEET_ID, invoice);
-        invoice.status = "processed";
-        await invoice.save();
-        log.success("Google Sheets updated");
+        const sheetToUse = currentUser.spreadsheetId || process.env.SPREADSHEET_ID;
+        
+        // Ensure appendInvoice handles the timestamp (as we fixed in the service file)
+        await appendInvoice(sheetToUse, invoice);
+        
+        log.success("Personal Google Sheet updated with Timestamp");
       } catch (err) {
-        log.warn("Sheets sync failed: " + err.message);
+        log.error("Sheets error: " + err.message);
+        // We don't crash the route if Sheets fails, just log it
       }
+    } else {
+      log.warn(`Skipping Sheets Sync: ${fields.vendor} requires manual mapping.`);
     }
 
-    // 9. Respond
-    res.json({ success: true, invoice: { ...invoice._doc, filePath: safeFilePath } });
+    res.json({ success: true, invoice });
 
   } catch (error) {
-    log.error("Upload route error: " + error.message);
+    log.error("Route Error: " + error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 });
