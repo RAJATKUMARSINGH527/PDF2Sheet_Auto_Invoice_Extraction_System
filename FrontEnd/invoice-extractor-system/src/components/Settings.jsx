@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL, getAuthHeaders } from "../config";
 import { 
   Database, Shield, Save, Check, ExternalLink, 
   ArrowLeft, Loader2 
@@ -21,10 +22,8 @@ export default function Settings() {
 useEffect(() => {
   const fetchSettings = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:5000/auth/profile", {
-        headers: { "x-auth-token": token }
-      });
+     // ✅ Uses dynamic URL and standard headers
+        const res = await axios.get(`${API_BASE_URL}/auth/profile`, getAuthHeaders());
       
       if (res.data) {
    
@@ -47,12 +46,10 @@ useEffect(() => {
 const handleSave = async () => {
   setIsSaving(true);
   try {
-    const token = localStorage.getItem("token");
+
     const payload = { spreadsheetId: sheetId, name: user.name };
 
-    const res = await axios.post("http://localhost:5000/auth/update-settings", payload, {
-      headers: { "x-auth-token": token },
-    });
+   const res = await axios.post(`${API_BASE_URL}/auth/update-settings`, payload, getAuthHeaders());
 
     if (res.data.success) {
       // 1. Construct the updated user object using data returned from server

@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom"; // Essential for the next step
 import axios from "axios";
+import { API_BASE_URL, getAuthHeaders } from "../config";
 import { 
   UploadCloud, FileText, CheckCircle2, 
   AlertCircle, Loader2, X, ArrowRight,
@@ -62,15 +63,15 @@ export default function UploadInvoice() {
         return;
       }
 
-      const res = await axios.post("http://localhost:5000/upload/", formData, {
+     // ✅ Use centralized API_BASE_URL and consistent headers
+      // Note: Passing true to getAuthHeaders because this is a multipart/form-data request
+      const res = await axios.post(`${API_BASE_URL}/upload/`, formData, {
         headers: {
+          ...getAuthHeaders().headers,
           "Content-Type": "multipart/form-data",
-          "x-auth-token": token,
-          // "Authorization": `Bearer ${token}`,
-          
         },
       });
-
+      
       if (res.data.success) {
         setStatus("success");
         setMessage(`Invoice ${res.data.invoice.invoiceNo || 'Processed'} extracted successfully!`);

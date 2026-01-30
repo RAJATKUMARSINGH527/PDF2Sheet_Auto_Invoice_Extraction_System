@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import { API_BASE_URL, getAuthHeaders } from "../config";
 import { 
   BarChart3, TrendingUp, Calendar, ArrowLeft, 
   ArrowUpRight, Clock, Zap, Target, PieChart, Loader2 
@@ -15,10 +16,8 @@ export default function Reports() {
   useEffect(() => {
     const fetchReportData = async () => {
       try {
-        const token = localStorage.getItem("token");
-        const res = await axios.get("http://localhost:5000/invoices/history", {
-          headers: { "x-auth-token": token },
-        });
+        // ✅ Uses dynamic URL and consistent headers
+        const res = await axios.get(`${API_BASE_URL}/invoices/history`, getAuthHeaders());
         setData(res.data);
       } catch (error) {
         console.error("Report fetch error:", error);
@@ -38,13 +37,14 @@ export default function Reports() {
     const totalCount = data.length;
     const totalVolume = data.reduce((acc, curr) => acc + parseFloat(curr.total || 0), 0);
     const totalConfidence = data.reduce((acc, curr) => acc + parseFloat(curr.confidence || 0), 0);
-    const avgConfidence = totalConfidence / totalCount;
+    // ✅ Prevents "NaN" if totalCount is 0 (division by zero error)
+    const avgConfidence = totalCount > 0 ? totalConfidence / totalCount : 0;
     const hoursSaved = (totalCount * 0.15).toFixed(1);
 
     return { 
       totalCount, 
       totalVolume: totalVolume.toLocaleString('en-IN'), 
-      accuracy: (avgConfidence * 100 || 98.5).toFixed(1),
+      accuracy: (avgConfidence * 100).toFixed(1),
       hoursSaved 
     };
   }, [data]);
@@ -163,7 +163,7 @@ export default function Reports() {
               <EfficiencyRow label="Auto-Mapped Vendors" percentage={data.length > 0 ? 85 : 0} color="bg-indigo-500" />
               <EfficiencyRow label="Zero-Correction Rate" percentage={parseFloat(stats.accuracy) > 90 ? 92 : 75} color="bg-emerald-500" />
               <EfficiencyRow label="Sync Success Rate" percentage={data.length > 0 ? 99 : 0} color="bg-indigo-400" />
-              <EfficiencyRow label="OCR Confidence" percentage={Math.floor(parseFloat(stats.accuracy) * 0.9)} color="bg-amber-500" />
+              <EfficiencyRow label="OCR Confidence" percentage={Math.floor(parseFloat(stats.accuracy) * 0.9) || 0} color="bg-amber-500" />
             </div>
 
             <div className="mt-8 pt-8 border-t border-slate-100">

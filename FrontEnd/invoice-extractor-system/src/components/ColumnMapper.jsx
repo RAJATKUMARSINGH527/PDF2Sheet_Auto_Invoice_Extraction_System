@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
+import { API_BASE_URL, getAuthHeaders } from "../config";
 import { Link2, Save, ArrowRightLeft, Database, Edit3, Loader2 } from "lucide-react";
 
 export default function ColumnMapper({ fields, email }) {
@@ -7,17 +8,22 @@ export default function ColumnMapper({ fields, email }) {
   const [saving, setSaving] = useState(false);
   const [customVendorName, setCustomVendorName] = useState("");
 
-  // CRITICAL FIX: Reset all states when a new invoice (fields) arrives
+  // ✅ This is the "particular part" that ensures consistency
   useEffect(() => {
     console.log("🔄 [MAPPER] Fields changed, resetting internal state...");
+    
+    // Logic: If the AI extracted a vendor, use it. 
+    // Otherwise, provide a generic fallback.
     if (fields && fields.vendor) {
       setCustomVendorName(fields.vendor);
     } else {
       setCustomVendorName("New Vendor");
     }
-    // Clear old mappings from previous invoices
+
+    // Reset mapping to prevent cross-invoice data contamination
     setMapping({}); 
-  }, [fields]);
+    
+  }, [fields]); // 👈 The hook re-runs every time 'fields' (the invoice) changes
 
   const handleChange = (field, col) => {
     setMapping((prev) => ({ ...prev, [field]: col }));
@@ -32,7 +38,7 @@ export default function ColumnMapper({ fields, email }) {
 
     try {
       setSaving(true);
-      const token = localStorage.getItem("token");
+
       
       const finalVendorName = customVendorName?.trim() || "New Vendor";
 
@@ -45,16 +51,11 @@ export default function ColumnMapper({ fields, email }) {
 
       console.log("📡 [MAPPER] Saving template:", payload);
 
-      // 3. FIXED POST request: Data and Headers must be separate arguments
+     // 3. Request using Centralized API URL and Auth Headers
       const res = await axios.post(
-        "http://localhost:5000/vendor/save", 
-        payload, // Argument 2: The Data
-        {
-          headers: { 
-            "Authorization": `Bearer ${token}`, // Use standard Bearer format
-            "x-auth-token": token 
-          } 
-        } // Argument 3: The Config
+        `${API_BASE_URL}/vendor/save`, 
+        payload, 
+        getAuthHeaders() // ✅ Centralized Auth & Standard Headers
       );
 
       if (res.data) {
