@@ -17,12 +17,14 @@ const log = {
 
 // --- Nodemailer Transporter ---
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true, // true for 465, false for other ports
+  port: 587,
+  secure: false, // Port 587 ke liye hamesha false rakhein
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
+  },
+  tls: {
+    rejectUnauthorized: false, // Self-signed certificate errors ko bypass karne ke liye
   },
   // Timeout issues fix 
   connectionTimeout: 10000, // 10 seconds
