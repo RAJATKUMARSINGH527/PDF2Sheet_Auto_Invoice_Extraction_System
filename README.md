@@ -125,7 +125,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🤝 Contact & Support
 **Project Lead**: Rajat Kumar Singh
-- Email: [rajatkumarsingh257@example.com](mailto:rajatkumarsingh257@example.com)  
+- Email: [rajatkumarsingh257@gmail.com](mailto:rajatkumarsingh257@gmail.com)  
 - GitHub: [RAJATKUMARSINGH527](https://github.com/RAJATKUMARSINGH527)  
 
 ## 🙏 Acknowledgements
