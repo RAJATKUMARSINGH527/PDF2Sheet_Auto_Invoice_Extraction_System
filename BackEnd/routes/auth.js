@@ -18,14 +18,14 @@ const log = {
   auth: (msg, details = "") => console.log(`\x1b[35m[AUTH]\x1b[0m ${msg} \x1b[90m${details}\x1b[0m`)
 };
 
-// --- Nodemailer Transporter ---
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // Gmail App Password
-  },
-});
+// // --- Nodemailer Transporter ---
+// const transporter = nodemailer.createTransport({
+//   service: "gmail",
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS, // Gmail App Password
+//   },
+// });
 
 // --- Modern Email Template Helper ---
 function getModernEmailTemplate(url, name) {
