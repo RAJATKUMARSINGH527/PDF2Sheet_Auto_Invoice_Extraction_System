@@ -57,7 +57,7 @@
 
 1. **Clone the repository**
 ```bash
-git clone [ttps://github.com/RAJATKUMARSINGH527/PDF2Sheet-Auto.git](https://github.com/RAJATKUMARSINGH527/PDF2Sheet_Auto_Invoice_Extraction_System.git)
+git clone https://github.com/RAJATKUMARSINGH527/PDF2Sheet_Auto_Invoice_Extraction_System.git
 cd BackEnd
 ```
 2. **Install dependencies**
@@ -76,7 +76,7 @@ RESEND_API_KEY=re_your_api_key
 GOOGLE_CLIENT_ID=your_id
 GOOGLE_CLIENT_SECRET=your_secret
 Frontend_URL=http://localhost:5173
-Frontend_Deployed_URL=[https://pdf-2-sheet-auto-invoice-extraction.vercel.app](https://pdf-2-sheet-auto-invoice-extraction.vercel.app)
+Frontend_Deployed_URL=https://pdf-2-sheet-auto-invoice-extraction.vercel.app
 VITE_API_BASE_URL=https://pdf2sheet-auto-invoice-extraction-system.onrender.com
 ```
 ## Running the Application
@@ -161,7 +161,8 @@ The project is deployed on Render and monitored by Cron-job.org to prevent the s
 ## License
 This project is licensed under the MIT License.
 
-##Contact
+## Contact
+
 *Developer*: Rajat Kumar Singh
 - Email: [rajatkumarsingh257@example.com](mailto:rajatkumarsingh257@example.com)  
 - GitHub: [RAJATKUMARSINGH527](https://github.com/RAJATKUMARSINGH527)  
