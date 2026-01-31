@@ -4,6 +4,7 @@ const cors = require("cors");
 const path = require("path");
 const passport = require("passport");
 const connectDB = require("./config/db");
+const errorHandler = require('./middleware/errorHandler');
 
 // Import Passport Config
 require("./config/passport"); 
@@ -132,6 +133,8 @@ app.use((err, req, res, next) => {
     error: err.message || "Internal Server Error"
   });
 });
+
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
