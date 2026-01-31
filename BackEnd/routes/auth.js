@@ -17,13 +17,26 @@ const log = {
 
 // --- Nodemailer Transporter ---
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // true for 465, false for other ports
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // Gmail App Password
+    pass: process.env.EMAIL_PASS,
   },
+  // Timeout issues fix 
+  connectionTimeout: 10000, // 10 seconds
+  greetingTimeout: 10000,
+  socketTimeout: 10000,
 });
 
+transporter.verify((error, success) => {
+  if (error) {
+    console.log("\x1b[31m[ERROR]\x1b[0m Email Server (Gmail) Connection Fail:", error.message);
+  } else {
+    console.log("\x1b[32m[SUCCESS]\x1b[0m Email Server is ready to take messages");
+  }
+});
 // --- Modern Email Template Helper ---
 function getModernEmailTemplate(url, name) {
   return `
