@@ -58,7 +58,7 @@ export default function UploadInvoice() {
       const token = localStorage.getItem("token");
       if (!token) {
         setStatus("error");
-        setMessage("Please Login/Signup to Upload PDF.");
+        setMessage("Please login to extract and sync invoices 🔒");
         return;
       }
 
@@ -76,13 +76,18 @@ export default function UploadInvoice() {
         );
         localStorage.setItem("invoice", JSON.stringify(res.data.invoice));
         setTimeout(() => navigate("/map"), 1500);
-      } else {
-        setStatus("error");
-        setMessage(res.data.error || "Extraction failed.");
       }
     } catch (err) {
       setStatus("error");
-      setMessage(err.response?.data?.error || "Server connection error 😢");
+
+      if (err.response?.status === 401) {
+        setMessage("Please login to extract and sync invoices 🔒");
+      } else {
+        setMessage(
+          err.response?.data?.error ||
+            "Something went wrong. Please try again.",
+        );
+      }
     }
   };
 
