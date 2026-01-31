@@ -5,6 +5,9 @@ const bcrypt = require("bcryptjs");
 const auth = require("../middleware/auth");
 const passport = require("passport");
 const nodemailer = require("nodemailer");
+// --- Resend Email Service ---
+const { Resend } = require('resend');
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // --- Enhanced Log Helper ---
 const log = {
@@ -15,30 +18,15 @@ const log = {
   auth: (msg, details = "") => console.log(`\x1b[35m[AUTH]\x1b[0m ${msg} \x1b[90m${details}\x1b[0m`)
 };
 
+// --- Nodemailer Transporter ---
 const transporter = nodemailer.createTransport({
-  // Yahan 'host' ko hardcode kar dein taaki ye 127.0.0.1 par na jaye
-  host: "smtp.gmail.com", 
-  port: 587,
-  secure: false, // 587 ke liye false
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    pass: process.env.EMAIL_PASS, // Gmail App Password
   },
-  // Extra security settings for Vercel
-  tls: {
-    rejectUnauthorized: false,
-    minVersion: "TLSv1.2"
-  },
-  connectionTimeout: 20000, // 20 seconds
 });
 
-transporter.verify((error, success) => {
-  if (error) {
-    console.log("\x1b[31m[ERROR]\x1b[0m Email Server (Gmail) Connection Fail:", error.message);
-  } else {
-    console.log("\x1b[32m[SUCCESS]\x1b[0m Email Server is ready to take messages");
-  }
-});
 // --- Modern Email Template Helper ---
 function getModernEmailTemplate(url, name) {
   return `
@@ -243,29 +231,61 @@ router.post("/login", async (req, res) => {
 });
 
 // --- 5. FORGOT PASSWORD ---
+// router.post("/forgot-password", async (req, res) => {
+//   const { email } = req.body;
+//   try {
+//     const user = await User.findOne({ email: email.toLowerCase().trim() });
+//     if (!user) return res.status(404).json({ error: "No account found with this email" });
+
+//     const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "15m" });
+//     const frontendURL = process.env.NODE_ENV === "production" ? process.env.Frontend_Deployed_URL : process.env.Frontend_URL;
+//     const resetUrl = `${frontendURL}/reset-password/${resetToken}`;
+
+//     const mailOptions = {
+//       from: `"PDF2Sheet Auto" <${process.env.EMAIL_USER}>`,
+//       to: email,
+//       subject: "🔒 Reset Your Password",
+//       html: getModernEmailTemplate(resetUrl, user.name || "User"),
+//     };
+
+//     await transporter.sendMail(mailOptions);
+//     log.success(`Reset link dispatched to: ${email}`);
+//     res.json({ message: "Reset link sent to your email" });
+//   } catch (err) {
+//     log.error(`Forgot Pwd Error: ${err.message}`);
+//     res.status(500).json({ error: "Failed to send email" });
+//   }
+// });
+
+// --- FORGOT PASSWORD ROUTE ---
 router.post("/forgot-password", async (req, res) => {
   const { email } = req.body;
   try {
     const user = await User.findOne({ email: email.toLowerCase().trim() });
-    if (!user) return res.status(404).json({ error: "No account found with this email" });
+    if (!user) return res.status(404).json({ error: "User not found" });
 
     const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "15m" });
     const frontendURL = process.env.NODE_ENV === "production" ? process.env.Frontend_Deployed_URL : process.env.Frontend_URL;
     const resetUrl = `${frontendURL}/reset-password/${resetToken}`;
 
-    const mailOptions = {
-      from: `"PDF2Sheet Auto" <${process.env.EMAIL_USER}>`,
+    // Gmail/SMTP ki jagah Resend API use karein
+    const { data, error } = await resend.emails.send({
+      from: 'PDF2Sheet <onboarding@resend.dev>', // Shuruat mein yahi use karein
       to: email,
-      subject: "🔒 Reset Your Password",
+      subject: '🔒 Reset Your Password',
       html: getModernEmailTemplate(resetUrl, user.name || "User"),
-    };
+    });
 
-    await transporter.sendMail(mailOptions);
-    log.success(`Reset link dispatched to: ${email}`);
+    if (error) {
+      log.error(`Resend Error: ${error.message}`);
+      return res.status(500).json({ error: "Email delivery failed" });
+    }
+
+    log.success(`Reset link sent via Resend to: ${email}`);
     res.json({ message: "Reset link sent to your email" });
   } catch (err) {
-    log.error(`Forgot Pwd Error: ${err.message}`);
-    res.status(500).json({ error: "Failed to send email" });
+    log.error(`Forgot Pwd Exception: ${err.message}`);
+    res.status(500).json({ error: "Server error" });
   }
 });
 
