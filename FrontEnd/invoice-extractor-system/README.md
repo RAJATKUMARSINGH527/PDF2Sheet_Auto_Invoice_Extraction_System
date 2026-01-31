@@ -123,6 +123,7 @@ FrontEnd/
     ├── vercel.json                 # Vercel deployment configuration
     └── vite.config.js              # Vite configuration
 
+```
 
 ## 🔐 Authentication Flow
 
