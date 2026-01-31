@@ -63,7 +63,7 @@ The application is built on a modular MERN architecture, ensuring scalability an
 ### 1. Clone the Repository
 
 ```bash
-git clone [https://github.com/RAJATKUMARSINGH527/PDF2Sheet_Auto_Invoice_Extraction_System.git](https://github.com/RAJATKUMARSINGH527/PDF2Sheet_Auto_Invoice_Extraction_System.git)
+git clone https://github.com/RAJATKUMARSINGH527/PDF2Sheet_Auto_Invoice_Extraction_System.git
 cd PDF2Sheet_Auto_Invoice_Extraction_System
 ```
 
