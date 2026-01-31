@@ -44,7 +44,6 @@ app.use(cors({
 // 4. Static File Serving (PDFs)
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   setHeaders: (res, filePath) => {
-    setHeaders: (res, filePath) => {
     // Standardize extensions for the browser
     if (filePath.toLowerCase().endsWith('.pdf')) {
       res.setHeader('Content-Type', 'application/pdf'); // Fixes application/octet-stream
@@ -52,7 +51,6 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
     }
       // Ensure the frontend can access the file across ports
       res.setHeader('Access-Control-Allow-Origin', '*');
-    }
   }
 }));
 
@@ -75,6 +73,7 @@ app.use("/auth", require("./routes/auth"));
 app.use("/upload", require("./routes/upload"));
 app.use("/vendor", require("./routes/vendor"));
 app.use("/invoices", require("./routes/invoices"));
+
 
 
 // Add this right before app.listen
