@@ -88,17 +88,41 @@ npm run dev
 ```bash
 http://localhost:5173
 ```
+## 📁 Frontend Project Structure
 
-## 📁 Project Structure
 ```text
-src/
- ├─ components/      # Reusable UI components
- ├─ pages/           # Pages (Login, Signup, Dashboard, History)
- ├─ context/         # AuthContext (Global state)
- ├─ utils/           # API config & helpers
- ├─ App.jsx          # Routing setup
- └─ main.jsx         # Application entry point
-```
+FrontEnd/
+└── invoice-extractor-system/
+    ├── src/
+    │   ├── assets/                 # Static assets (images, icons, etc.)
+    │   ├── components/             # Reusable UI components
+    │   │   ├── ColumnMapper.jsx    # Column mapping interface
+    │   │   ├── FieldList.jsx       # Extracted field listing
+    │   │   ├── History.jsx         # Invoice history table
+    │   │   ├── Navbar.jsx          # Top navigation bar
+    │   │   ├── PDFViewer.jsx       # PDF preview component
+    │   │   ├── Reports.jsx         # Invoice reports & analytics
+    │   │   ├── Settings.jsx        # User account settings
+    │   │   └── UploadInvoice.jsx   # Invoice upload & extraction UI
+    │   │
+    │   ├── pages/                  # Route-level pages
+    │   │   ├── Dashboard.jsx       # Main dashboard
+    │   │   ├── ForgotPassword.jsx  # Forgot password screen
+    │   │   ├── Login.jsx           # User login page
+    │   │   ├── Mapping.jsx         # Invoice-to-sheet mapping page
+    │   │   ├── ResetPassword.jsx   # Password reset page
+    │   │   └── SignUp.jsx          # User registration page
+    │   │
+    │   ├── App.css                 # Global styles
+    │   ├── App.jsx                 # Application routing & layout
+    │   ├── main.jsx                # Application entry point
+    │   └── config.js               # API base URL & Axios configuration
+    │
+    ├── README.md                   # Frontend documentation
+    ├── package.json                # Project dependencies & scripts
+    ├── vercel.json                 # Vercel deployment configuration
+    └── vite.config.js              # Vite configuration
+
 
 ## 🔐 Authentication Flow
 
@@ -129,6 +153,7 @@ PDF2Sheet Auto is ideal for:
 - Finance teams
 - Small businesses
 - SaaS platforms handling invoices
+
 It converts unstructured PDFs into structured spreadsheet-ready data with almost zero manual work.
 
 ## 👨‍💻 Developer
