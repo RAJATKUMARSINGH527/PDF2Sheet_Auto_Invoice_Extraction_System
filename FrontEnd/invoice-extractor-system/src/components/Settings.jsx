@@ -9,78 +9,57 @@ import {
 
 export default function Settings() {
   const navigate = useNavigate();
-  // Initialize from LocalStorage for immediate UI response
   const [user, setUser] = useState(() => JSON.parse(localStorage.getItem("user") || "{}"));
   const [sheetId, setSheetId] = useState(localStorage.getItem("spreadsheet_id") || "");
   const [isSaving, setIsSaving] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
-  
-  // Ref to track if we've already synced with the DB to prevent overwriting user input
   const hasFetched = useRef(false);
 
-  // Load fresh settings from DB on mount
-useEffect(() => {
-  const fetchSettings = async () => {
-    try {
-     // ✅ Uses dynamic URL and standard headers
+  useEffect(() => {
+    const fetchSettings = async () => {
+      try {
         const res = await axios.get(`${API_BASE_URL}/auth/profile`, getAuthHeaders());
-      
-      if (res.data) {
-   
-        setUser(res.data);
-        setSheetId(res.data.spreadsheetId || "");
+        if (res.data) {
+          setUser(res.data);
+          setSheetId(res.data.spreadsheetId || "");
+          localStorage.setItem("user", JSON.stringify(res.data));
+          localStorage.setItem("spreadsheet_id", res.data.spreadsheetId || "");
+          hasFetched.current = true;
+        }
+      } catch (error) {
+        console.error(error.message, "Profile fetch failed");
+      }
+    };
+    fetchSettings();
+  }, []);
 
-        localStorage.setItem("user", JSON.stringify(res.data));
-        localStorage.setItem("spreadsheet_id", res.data.spreadsheetId || "");
-        
-        hasFetched.current = true;
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      const payload = { spreadsheetId: sheetId, name: user.name };
+      const res = await axios.post(`${API_BASE_URL}/auth/update-settings`, payload, getAuthHeaders());
+
+      if (res.data.success) {
+        const updatedUser = { 
+          ...user, 
+          name: res.data.user.name, 
+          spreadsheetId: res.data.user.spreadsheetId 
+        };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        localStorage.setItem("spreadsheet_id", res.data.user.spreadsheetId);
+        setUser(updatedUser);
+        setSheetId(res.data.user.spreadsheetId);
+        window.dispatchEvent(new Event("userUpdated"));
+        window.dispatchEvent(new Event("storage"));
+        setMessage({ type: "success", text: "Configuration Saved!" });
       }
     } catch (error) {
-      console.error(error.message, "Profile fetch failed");
-      
+      console.error("Save Settings Error:", error);
+      setMessage({ type: "error", text: "Save failed. Please try again." });
+    } finally {
+      setIsSaving(false);
     }
   };
-  fetchSettings();
-}, []);
-
-const handleSave = async () => {
-  setIsSaving(true);
-  try {
-
-    const payload = { spreadsheetId: sheetId, name: user.name };
-
-   const res = await axios.post(`${API_BASE_URL}/auth/update-settings`, payload, getAuthHeaders());
-
-    if (res.data.success) {
-      // 1. Construct the updated user object using data returned from server
-      const updatedUser = { 
-        ...user, 
-        name: res.data.user.name, 
-        spreadsheetId: res.data.user.spreadsheetId 
-      };
-      
-      // 2. Update all LocalStorage keys
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      localStorage.setItem("spreadsheet_id", res.data.user.spreadsheetId);
-      
-      // 3. Update local state
-      setUser(updatedUser);
-      setSheetId(res.data.user.spreadsheetId);
-
-      // 4. 🚀 THE FIX: Dispatch the custom event to update Navbar & Dashboard instantly
-      window.dispatchEvent(new Event("userUpdated"));
-      // Also dispatch standard storage event for cross-tab sync
-      window.dispatchEvent(new Event("storage"));
-
-      setMessage({ type: "success", text: "Configuration Saved!" });
-    }
-  } catch (error) {
-    console.error("Save Settings Error:", error);
-    setMessage({ type: "error", text: "Save failed. Please try again." });
-  } finally {
-    setIsSaving(false);
-  }
-};
 
   const openSheet = () => {
     if (sheetId) {
@@ -90,9 +69,9 @@ const handleSave = async () => {
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] flex flex-col font-sans">
-      {/* Header with Back Option */}
-      <header className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between sticky top-0 z-20">
-        <div className="flex items-center gap-4">
+      {/* Header - Fixed Height for consistency */}
+      <header className="h-20 bg-white border-b border-slate-200 px-4 sm:px-8 flex items-center sticky top-0 z-20">
+        <div className="flex items-center gap-3 sm:gap-4">
           <button 
             onClick={() => navigate("/dashboard")} 
             className="p-2 hover:bg-slate-100 rounded-full transition-all"
@@ -100,13 +79,13 @@ const handleSave = async () => {
             <ArrowLeft size={20} className="text-slate-500" />
           </button>
           <div>
-            <h1 className="text-xl font-black text-slate-800 tracking-tight leading-none">Settings</h1>
-            <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-1">Configure Workspace Automation</p>
+            <h1 className="text-lg sm:text-xl font-black text-slate-800 tracking-tight leading-none">Settings</h1>
+            <p className="text-[9px] sm:text-[10px] font-bold text-indigo-500 uppercase tracking-widest mt-1">Configure Workspace Automation</p>
           </div>
         </div>
       </header>
 
-      <main className="flex-1 p-8 max-w-4xl mx-auto w-full space-y-8">
+      <main className="flex-1 p-4 sm:p-8 max-w-4xl mx-auto w-full space-y-6 sm:space-y-8">
         
         {/* Toast Notification */}
         {message.text && (
@@ -114,38 +93,38 @@ const handleSave = async () => {
             message.type === "success" ? "bg-emerald-50 border-emerald-100 text-emerald-700" : "bg-rose-50 border-rose-100 text-rose-700"
           }`}>
             {message.type === "success" ? <Check size={18} /> : <Shield size={18} />}
-            <span className="text-sm font-bold">{message.text}</span>
+            <span className="text-xs sm:text-sm font-bold">{message.text}</span>
           </div>
         )}
 
         {/* Profile Card */}
-        <section className="bg-white rounded-[2.5rem] border border-slate-200 p-8 shadow-sm">
-          <div className="flex items-center gap-6 mb-8">
-            <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center text-white text-3xl font-black shadow-xl shadow-indigo-100 text-center uppercase">
+        <section className="bg-white rounded-4xl sm:rounded-[2.5rem] border border-slate-200 p-6 sm:p-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6 mb-8 text-center sm:text-left">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-indigo-600 rounded-2xl sm:rounded-3xl flex items-center justify-center text-white text-2xl sm:text-3xl font-black shadow-xl shadow-indigo-100 uppercase">
               {user.name?.charAt(0) || "U"}
             </div>
             <div>
-              <h3 className="text-xl font-black text-slate-800">{user.name || "User Account"}</h3>
-              <p className="text-slate-500 font-medium">{user.email}</p>
-              <span className="mt-2 inline-block px-3 py-1 bg-indigo-50 text-indigo-600 text-[10px] font-black uppercase rounded-full tracking-wider">MERN Pro Account</span>
+              <h3 className="text-lg sm:text-xl font-black text-slate-800">{user.name || "User Account"}</h3>
+              <p className="text-sm text-slate-500 font-medium truncate max-w-62.5">{user.email}</p>
+              <span className="mt-2 inline-block px-3 py-1 bg-indigo-50 text-indigo-600 text-[9px] sm:text-[10px] font-black uppercase rounded-full tracking-wider">MERN Pro Account</span>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
+              <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Name</label>
               <input 
                 type="text" 
                 value={user.name || ""} 
                 onChange={(e) => {
-                  hasFetched.current = true; // Block incoming DB sync from overwriting this
+                  hasFetched.current = true;
                   setUser({ ...user, name: e.target.value });
                 }} 
                 className="w-full bg-slate-50 border-none rounded-xl p-3 text-sm font-bold focus:ring-2 focus:ring-indigo-500 outline-none" 
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Registered Email</label>
+              <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest">Registered Email</label>
               <input 
                 type="email" 
                 value={user.email || ""} 
@@ -157,22 +136,22 @@ const handleSave = async () => {
         </section>
 
         {/* Google Sheets Integration Card */}
-        <section className="bg-white rounded-[2.5rem] border border-slate-200 p-8 shadow-sm">
-          <div className="flex items-center justify-between mb-8">
+        <section className="bg-white rounded-4xl sm:rounded-[2.5rem] border border-slate-200 p-6 sm:p-8 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <div className="flex items-center gap-3">
-              <Database className="text-indigo-600" size={24} />
-              <h3 className="text-xl font-black text-slate-800">Automation Sync</h3>
+              <Database className="text-indigo-600 shrink-0" size={24} />
+              <h3 className="text-lg sm:text-xl font-black text-slate-800">Automation Sync</h3>
             </div>
             <div className="flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full">
                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-               <span className="text-[10px] font-black uppercase tracking-widest">API Online</span>
+               <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">API Online</span>
             </div>
           </div>
 
           <div className="space-y-6">
-            <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Google Spreadsheet ID</label>
-              <div className="flex gap-3">
+            <div className="p-4 sm:p-6 bg-slate-50 rounded-2xl sm:rounded-3xl border border-slate-100">
+              <label className="text-[9px] sm:text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Google Spreadsheet ID</label>
+              <div className="flex flex-col sm:flex-row gap-3">
                 <input 
                   type="text" 
                   placeholder="Paste ID here (e.g. 10T4N6Cccojulc7ObMdspdjGLzaA6RoQZzJCdiefNOT4)"
@@ -181,30 +160,28 @@ const handleSave = async () => {
                     hasFetched.current = true;
                     setSheetId(e.target.value);
                   }}
-                  className="flex-1 bg-white border border-slate-200 rounded-xl p-3 text-sm font-mono focus:ring-2 focus:ring-indigo-500 transition-all outline-none" 
+                  className="flex-1 bg-white border border-slate-200 rounded-xl p-3 text-xs sm:text-sm font-mono focus:ring-2 focus:ring-indigo-500 transition-all outline-none" 
                 />
                 <button 
                   onClick={openSheet}
-                  title="Open Spreadsheet"
-                  className="p-3 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm"
+                  className="p-3 bg-white border border-slate-200 rounded-xl text-slate-500 hover:text-indigo-600 hover:border-indigo-200 transition-all shadow-sm flex items-center justify-center"
                 >
                   <ExternalLink size={20} />
                 </button>
               </div>
-              <p className="text-[10px] text-slate-400 font-medium mt-3 italic leading-relaxed">
-                The ID is the long string of characters in your Google Sheet URL: 
-                <br />docs.google.com/spreadsheets/d/<span className="text-indigo-600 font-bold underline">THIS_PART_HERE</span>/edit
+              <p className="text-[9px] sm:text-[10px] text-slate-400 font-medium mt-3 italic leading-relaxed">
+                docs.google.com/spreadsheets/d/<span className="text-indigo-600 font-bold underline">SPREADSHEET_ID</span>/edit
               </p>
             </div>
 
-            <div className="flex items-center justify-between pt-4">
-               <div className="flex flex-col">
+            <div className="flex flex-col sm:flex-row items-center justify-between pt-4 gap-6">
+               <div className="flex flex-col text-center sm:text-left">
                   <span className="text-xs font-black text-slate-700 uppercase">Auto-Sync Status</span>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Pushes extracted data to Row 1 of your sheet</span>
+                  <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-widest">Pushes data to your sheet</span>
                </div>
                <button 
                 onClick={handleSave}
-                className="flex items-center gap-2 bg-indigo-600 text-white px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all disabled:bg-slate-300 disabled:shadow-none"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 bg-indigo-600 text-white px-8 sm:px-10 py-4 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all disabled:bg-slate-300"
                 disabled={isSaving}
               >
                 {isSaving ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
@@ -214,18 +191,17 @@ const handleSave = async () => {
           </div>
         </section>
 
-        {/* Security / Info */}
-        <section className="bg-slate-100/50 rounded-[2.5rem] p-8 border border-slate-200 border-dashed">
-           <div className="flex items-start gap-4">
-              <Shield className="text-slate-400 mt-1" size={20} />
+        {/* Security Info */}
+        <section className="bg-slate-100/50 rounded-4xl sm:rounded-[2.5rem] p-6 sm:p-8 border border-slate-200 border-dashed">
+            <div className="flex items-start gap-4">
+              <Shield className="text-slate-400 mt-1 shrink-0" size={20} />
               <div>
-                 <h4 className="text-sm font-black text-slate-800 uppercase tracking-tighter">Security Protocol</h4>
-                 <p className="text-xs text-slate-500 leading-relaxed mt-1">
-                    Your Spreadsheet ID is stored securely. We only access the specific sheet you provide. 
-                    Ensure your Google Cloud credentials have "Editor" access to this sheet.
+                 <h4 className="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-tighter">Security Protocol</h4>
+                 <p className="text-[10px] sm:text-xs text-slate-500 leading-relaxed mt-1">
+                   Spreadsheet ID is stored securely. Ensure your Google Cloud credentials have "Editor" access to this sheet.
                  </p>
               </div>
-           </div>
+            </div>
         </section>
       </main>
     </div>

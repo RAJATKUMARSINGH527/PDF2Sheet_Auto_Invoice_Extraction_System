@@ -6,6 +6,8 @@ import Dashboard from "./pages/Dashboard";
 import Mapping from "./pages/Mapping";
 import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
+import ForgotPassword from "./pages/ForgotPassword"; 
+import ResetPassword from "./pages/ResetPassword";
 
 // Components & Modules
 import Navbar from "./components/Navbar";
@@ -14,7 +16,7 @@ import Reports from "./components/Reports";
 import History from "./components/History";
 import Settings from "./components/Settings";
 
-// Protected Route Wrapper (Sirf private data ke liye use karein)
+// Protected Route Wrapper
 const ProtectedRoute = ({ children }) => {
   const token = localStorage.getItem("token");
   return token ? children : <Navigate to="/login" replace />;
@@ -23,7 +25,6 @@ const ProtectedRoute = ({ children }) => {
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
 
-  // Auth state ko sync rakhein
   useEffect(() => {
     const handleStorageChange = () => {
       setIsAuthenticated(!!localStorage.getItem("token"));
@@ -34,14 +35,12 @@ export default function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-slate-50 flex flex-col">
+      <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
         
-        {/* FIX 1: Navbar hamesha dikhao taaki Login/Signup buttons nazar aayein */}
         <Navbar />
 
         <main className="flex-1">
           <Routes>
-            {/* FIX 2: Dashboard aur Upload ko Public banao (ProtectedRoute hata diya) */}
             <Route path="/" element={<Dashboard />} />
             <Route path="/dashboard" element={<Dashboard />} />
             
@@ -60,7 +59,18 @@ export default function App() {
               element={!isAuthenticated ? <SignUp /> : <Navigate to="/dashboard" replace />} 
             />
 
-            {/* Private Workspace Routes (Sirf login ke baad) */}
+            {/* 2. FORGOT & RESET ROUTES (Public) */}
+            <Route 
+              path="/forgot-password" 
+              element={<ForgotPassword />} 
+            />
+            {/* :token dynamic parameter hai jo email link se aayega */}
+            <Route 
+              path="/reset-password/:token" 
+              element={<ResetPassword />} 
+            />
+
+            {/* Private Workspace Routes */}
             <Route 
               path="/history" 
               element={<ProtectedRoute><History /></ProtectedRoute>} 

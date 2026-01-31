@@ -4,89 +4,66 @@ import { Link } from "react-router-dom";
 import PDFViewer from "../components/PDFViewer";
 import FieldList from "../components/FieldList";
 import ColumnMapper from "../components/ColumnMapper";
-import { API_BASE_URL} from "../config";
+import { API_BASE_URL } from "../config";
 
 export default function Mapping() {
   const [invoice, setInvoice] = useState(null);
   const [isReady, setIsReady] = useState(false);
 
-  // 1. FRESH LOAD LOGIC: Ensure we pull the latest invoice on every mount
   useEffect(() => {
     const savedInvoice = localStorage.getItem("invoice");
     if (savedInvoice) {
       try {
         const parsed = JSON.parse(savedInvoice);
         Promise.resolve().then(() => setInvoice(parsed));
-        console.log(
-          "📄 [MAPPING] Loaded Invoice:",
-          parsed.vendor || parsed.vendorName,
-        );
       } catch (e) {
         console.error("Failed to parse invoice", e);
       }
     }
     Promise.resolve().then(() => setIsReady(true));
-
-    // CLEANUP: clear invoice from state when leaving
     return () => setInvoice(null);
   }, []);
 
-  if (!isReady) return null; // Prevent flicker
+  if (!isReady) return null;
 
-  // --- RENDER GUARD: Workspace Empty State ---
   if (!invoice) {
     return (
-      <div className="relative h-screen flex items-center justify-center bg-[#f8fafc] overflow-hidden px-6">
+      <div className="relative min-h-screen flex items-center justify-center bg-[#f8fafc] overflow-hidden px-6">
         <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-100/40 blur-[100px]" />
         <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-purple-100/40 blur-[100px]" />
-
         <div className="relative z-10 w-full max-w-md">
-          <div className="bg-white/80 backdrop-blur-2xl border border-white shadow-[0_20px_50px_rgba(0,0,0,0.05)] rounded-[2.5rem] p-12 text-center">
-            <div className="relative mx-auto w-24 h-24 mb-10 group">
-              <div className="absolute inset-0 bg-indigo-100 rounded-4xl rotate-6 group-hover:rotate-12 transition-transform duration-500 ease-out" />
-              <div className="absolute inset-0 bg-indigo-600 rounded-4xl flex items-center justify-center shadow-xl shadow-indigo-200 group-hover:scale-105 transition-transform duration-500">
-                <Loader2 className="w-10 h-10 text-white animate-[spin_3s_linear_infinite]" />
+          <div className="bg-white/80 backdrop-blur-2xl border border-white shadow-xl rounded-[2.5rem] p-8 sm:p-12 text-center">
+            <div className="relative mx-auto w-20 h-20 sm:w-24 sm:h-24 mb-8 sm:10 group">
+              <div className="absolute inset-0 bg-indigo-100 rounded-3xl sm:rounded-4xl rotate-6 group-hover:rotate-12 transition-transform duration-500 ease-out" />
+              <div className="absolute inset-0 bg-indigo-600 rounded-3xl sm:rounded-4xl flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-500">
+                <Loader2 className="w-8 h-8 sm:w-10 sm:h-10 text-white animate-spin" />
               </div>
               <div className="absolute -bottom-2 -right-2 bg-amber-400 p-2 rounded-full border-4 border-white shadow-md">
-                <AlertCircle className="w-4 h-4 text-white" />
+                <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
               </div>
             </div>
-
-            <h2 className="text-2xl font-black text-slate-900 tracking-tight mb-3">
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 mb-3">
               Workspace Empty
             </h2>
-            <p className="text-slate-500 text-[15px] leading-relaxed mb-10 px-2">
+            <p className="text-slate-500 text-sm sm:text-[15px] mb-8 sm:10 px-2">
               We couldn't find an active invoice in your session. Head back to
               the dashboard to select a document for mapping.
             </p>
-
-            <div className="space-y-4">
-              <Link
-                to="/dashboard"
-                className="flex items-center justify-center gap-2 bg-slate-900 text-white px-8 py-4 rounded-2xl font-bold hover:bg-indigo-600 hover:-translate-y-1 transition-all duration-300 active:scale-95 shadow-lg shadow-slate-200"
-              >
-                <ArrowLeft size={18} strokeWidth={3} />
-                Back to Dashboard
-              </Link>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">
-                Awaiting Document Input
-              </p>
-            </div>
+            <Link
+              to="/dashboard"
+              className="flex items-center justify-center gap-2 bg-slate-900 text-white px-6 py-4 rounded-2xl font-bold hover:bg-indigo-600 transition-all shadow-lg"
+            >
+              <ArrowLeft size={18} /> Back to Dashboard
+            </Link>
           </div>
         </div>
       </div>
     );
   }
 
-// --- DYNAMIC LOGIC: Smart URL Construction ---
-  
-  // 1. Sanitize the path for all OS types
-  const safePath = invoice.filePath?.replace(/\\/g, "/"); 
-
-  // 2. Build URL using our central API config
+  // --- LOGIC ---
+  const safePath = invoice.filePath?.replace(/\\/g, "/");
   const fileUrl = `${API_BASE_URL}/${safePath}`;
-
-  // 3. Prepare fields object for child components
   const fields = {
     invoiceNo: invoice.invoiceNo || "N/A",
     date: invoice.date || "N/A",
@@ -95,86 +72,80 @@ export default function Mapping() {
   };
 
   return (
-    <div className="h-[calc(100vh-64px)] bg-gray-50 flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="h-16 bg-white border-b border-gray-100 px-8 flex justify-between items-center shadow-sm z-10 shrink-0">
-        <div className="flex items-center gap-4">
+    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
+      <header className="h-16 sm:h-20 bg-white border-b border-gray-100 px-4 sm:px-8 flex justify-between items-center shadow-sm z-20 shrink-0">
+        <div className="flex items-center gap-3 sm:gap-4 truncate">
           <Link
             to="/dashboard"
-            className="p-2 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-indigo-600"
+            className="p-2 hover:bg-gray-100 rounded-full transition text-gray-400"
           >
             <ArrowLeft size={20} />
           </Link>
-          <div>
-            <h2 className="text-[10px] font-bold text-indigo-500 uppercase tracking-widest leading-none mb-1">
+          <div className="truncate">
+            <h2 className="text-[9px] sm:text-[10px] font-black text-indigo-500 uppercase tracking-widest leading-none mb-1">
               Workspace / Verification
             </h2>
-            <p className="text-sm font-extrabold text-gray-800 truncate max-w-xs">
+            <p className="text-xs sm:text-sm font-extrabold text-gray-800 truncate max-w-37.5 sm:max-w-xs">
               {invoice.senderEmail || "Unknown Sender"}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {invoice.confidence >= 0.75 ? (
-            <span className="flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-bold border border-green-100">
-              <CheckCircle2 size={14} /> High Confidence
+            <span className="flex items-center gap-1.5 px-2.5 py-1 bg-green-50 text-green-700 rounded-full text-[10px] sm:text-xs font-bold border border-green-100">
+              <CheckCircle2 size={12} className="hidden sm:block" /> High
+              Confidence
             </span>
           ) : (
-            <span className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-full text-xs font-bold border border-amber-100">
-              <AlertCircle size={14} /> Verification Needed
+            <span className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 text-amber-700 rounded-full text-[10px] sm:text-xs font-bold border border-amber-100">
+              <AlertCircle size={12} className="hidden sm:block" /> Needs Review
             </span>
           )}
         </div>
-      </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="flex-1 grid grid-cols-12 overflow-hidden">
-        {/* Column 1: Document View */}
-        <div className="col-span-7 bg-slate-200 border-r border-gray-200 relative overflow-hidden">
-          {/* key={fileUrl} forces PDFViewer to reload when a new invoice is loaded */}
+      <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 overflow-hidden">
+        <div className="h-[45vh] lg:h-full lg:col-span-7 bg-slate-200 border-b lg:border-b-0 lg:border-r border-gray-200 relative overflow-hidden shrink-0">
           <PDFViewer key={fileUrl} fileUrl={fileUrl} />
         </div>
 
-        {/* Column 2: Sidebar */}
-        <div className="col-span-5 flex flex-col bg-white overflow-hidden">
-          {/* Section 1: AI Extraction */}
-          <section className="p-8 border-b border-gray-100 shrink-0 max-h-[40%] overflow-y-auto scrollbar-thin">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest">
-                1. AI Extraction
-              </h3>
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter">
-                Values read from PDF
-              </span>
-            </div>
-            {/* Added key to FieldList to force reset on new invoice IDs */}
-            <FieldList
-              key={`fields-${invoice._id || "temp"}`}
-              fields={fields}
-            />
-          </section>
-
-          {/* Section 2: Destination Mapping */}
-          <section className="flex-1 flex flex-col p-8 bg-indigo-50/20 overflow-hidden">
-            <div className="flex items-center justify-between mb-4 shrink-0">
-              <h3 className="text-xs font-black text-indigo-400 uppercase tracking-widest">
-                2. Destination Mapping
-              </h3>
-              <span className="text-[10px] text-indigo-400 font-bold">
-                Sheet Link Active
-              </span>
-            </div>
-
-            <div className="flex-1 min-h-0 bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
-              {/* Added key to ColumnMapper to force reset on new invoice IDs */}
-              <ColumnMapper
-                key={`mapper-${invoice._id || "temp"}`}
+        <div className="flex-1 lg:h-full lg:col-span-5 flex flex-col bg-white overflow-hidden">
+          <div className="flex-1 overflow-y-auto scrollbar-hide">
+            <section className="p-5 sm:p-8 border-b border-gray-100">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
+                <h3 className="text-[10px] sm:text-xs font-black text-gray-400 uppercase tracking-widest">
+                  1. AI Extraction
+                </h3>
+                <span className="text-[9px] text-gray-400 font-bold uppercase">
+                  Source: OCR
+                </span>
+              </div>
+              <FieldList
+                key={`fields-${invoice._id || "temp"}`}
                 fields={fields}
-                email={invoice.senderEmail}
               />
-            </div>
-          </section>
+            </section>
+
+            <section className="p-5 sm:p-8 bg-indigo-50/20">
+              <div className="flex items-center justify-between mb-4 shrink-0">
+                <h3 className="text-[10px] sm:text-xs font-black text-indigo-400 uppercase tracking-widest">
+                  2. Destination Mapping
+                </h3>
+                <span className="text-[9px] text-indigo-400 font-bold uppercase">
+                  Sync Active
+                </span>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+                <ColumnMapper
+                  key={`mapper-${invoice._id || "temp"}`}
+                  fields={fields}
+                  email={invoice.senderEmail}
+                />
+              </div>
+            </section>
+          </div>
         </div>
       </div>
     </div>
