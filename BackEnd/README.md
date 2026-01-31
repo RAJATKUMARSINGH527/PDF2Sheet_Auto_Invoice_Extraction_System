@@ -128,7 +128,7 @@ BackEnd/
 6. **Password Reset**: User requests reset -> Resend sends unique token link -> User updates password.
 
 ## 🛠️API Endpoints – PDF2Sheet Auto
-**🔹 Authentication Routes (/auth)**
+**🔹 Authentication Routes (`/auth`)**
 
 | Method | Endpoint                      | Description                          | Request Body / Params                                  | Auth Required |
 | ------ | ----------------------------- | ------------------------------------ | ------------------------------------------------------ | ------------- |
@@ -139,13 +139,13 @@ BackEnd/
 | POST   | `/auth/reset-password/:token` | Update password using reset token    | `{ "password": "..." }`                                | No            |
 | POST   | `/auth/update-settings`       | Update user profile/account settings | `{ "name": "...", "email": "..." }`                    | Yes (JWT)     |
 
-**🔹 Upload & Extraction Routes (/upload)**
+**🔹 Upload & Extraction Routes (`/upload`)**
 | Method | Endpoint       | Description                          | Request Body                 | Auth Required |
 | ------ | -------------- | ------------------------------------ | ---------------------------- | ------------- |
 | POST   | `/upload/`     | Upload PDF & trigger auto-extraction | `FormData (key: pdf)`        | Yes (JWT)     |
 | POST   | `/upload/save` | Save extracted invoice data to DB    | `{ "invoiceData": { ... } }` | Yes (JWT)     |
 
-**🔹 Invoice & Vendor Routes (/invoices, /vendor)**
+**🔹 Invoice & Vendor Routes (`/invoices`, `/vendor`)**
 | Method | Endpoint            | Description                        | Request Body | Auth Required |
 | ------ | ------------------- | ---------------------------------- | ------------ | ------------- |
 | GET    | `/invoices/history` | Fetch all processed invoices       | N/A          | Yes (JWT)     |
