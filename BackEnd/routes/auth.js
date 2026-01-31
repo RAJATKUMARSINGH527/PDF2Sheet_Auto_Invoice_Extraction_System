@@ -15,21 +15,21 @@ const log = {
   auth: (msg, details = "") => console.log(`\x1b[35m[AUTH]\x1b[0m ${msg} \x1b[90m${details}\x1b[0m`)
 };
 
-// --- Nodemailer Transporter ---
 const transporter = nodemailer.createTransport({
+  // Yahan 'host' ko hardcode kar dein taaki ye 127.0.0.1 par na jaye
+  host: "smtp.gmail.com", 
   port: 587,
-  secure: false, // Port 587 ke liye hamesha false rakhein
+  secure: false, // 587 ke liye false
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
   },
+  // Extra security settings for Vercel
   tls: {
-    rejectUnauthorized: false, // Self-signed certificate errors ko bypass karne ke liye
+    rejectUnauthorized: false,
+    minVersion: "TLSv1.2"
   },
-  // Timeout issues fix 
-  connectionTimeout: 10000, // 10 seconds
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
+  connectionTimeout: 20000, // 20 seconds
 });
 
 transporter.verify((error, success) => {
