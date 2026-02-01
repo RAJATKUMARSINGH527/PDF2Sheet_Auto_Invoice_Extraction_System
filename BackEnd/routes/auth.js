@@ -61,27 +61,53 @@ router.get("/google", (req, res, next) => {
 }, passport.authenticate("google", { scope: ["profile", "email"] }));
 
 
+// router.get("/google/callback", 
+//   passport.authenticate("google", { session: false, failureRedirect: "/login" }),
+//   (req, res) => {
+//     try {
+//       log.success(`Passport strategy matched user: ${req.user.email}`);
+      
+//       const token = jwt.sign(
+//         { id: req.user._id }, 
+//         process.env.JWT_SECRET_KEY, 
+//         { expiresIn: "1d" }
+//       );
+
+//       const frontendURL = process.env.NODE_ENV === "production" 
+//         ? process.env.Frontend_Deployed_URL 
+//         : process.env.Frontend_URL;
+
+//       log.auth("OAuth Handshake Complete.", `Generating JWT for UID: ${req.user._id}`);
+      
+//       // Changed from /login?token to /dashboard?token
+//       res.redirect(`${frontendURL}/dashboard?token=${token}`);
+
+//     } catch (err) {
+//       log.error(`Critical OAuth Callback Error: ${err.message}`);
+//       res.redirect(`${process.env.Frontend_URL}/login?error=auth_failed`);
+//     }
+//   }
+// );
+
 router.get("/google/callback", 
   passport.authenticate("google", { session: false, failureRedirect: "/login" }),
   (req, res) => {
     try {
-      log.success(`Passport strategy matched user: ${req.user.email}`);
+      const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET_KEY, { expiresIn: "1d" });
+
+      // Sabse safe tareeka: Check karo ki request localhost se aa rahi hai ya nahi
+      const isLocal = req.headers.host.includes('localhost');
       
-      const token = jwt.sign(
-        { id: req.user._id }, 
-        process.env.JWT_SECRET_KEY, 
-        { expiresIn: "1d" }
-      );
+      const frontendURL = isLocal 
+        ? "http://localhost:5173" 
+        : "https://pdf-2-sheet-auto-invoice-extraction.vercel.app";
 
-      const frontendURL = process.env.NODE_ENV === "production" 
-        ? process.env.Frontend_Deployed_URL 
-        : process.env.Frontend_URL;
+      log.auth("Redirecting...", `To: ${frontendURL}`);
+      res.redirect(`${frontendURL}/dashboard?token=${token}`);
 
-      log.auth("OAuth Handshake Complete.", `Generating JWT for UID: ${req.user._id}`);
-      res.redirect(`${frontendURL}/login?token=${token}`);
     } catch (err) {
-      log.error(`Critical OAuth Callback Error: ${err.message}`);
-      res.redirect(`${process.env.Frontend_URL}/login?error=auth_failed`);
+      log.error(`OAuth Error: ${err.message}`);
+      res.redirect("http://localhost:5173/login?error=auth_failed");
     }
   }
 );
@@ -98,7 +124,7 @@ router.get("/profile", auth, async (req, res) => {
       return res.status(401).json({ error: "Invalid token payload" });
     }
 
-    const user = await await User.findById(userId).select("-password");
+    const user = await User.findById(userId).select("-password");
     if (!user) {
       log.warn(`Profile Fetch Error: ID ${userId} exists in token but not in MongoDB.`);
       return res.status(404).json({ error: "User no longer exists" });
