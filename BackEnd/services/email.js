@@ -16,16 +16,17 @@ const transporter = nodemailer.createTransport({
   service: 'gmail',
   pool: true, // 💡 Naya: Connections reuse honge
   host: 'smtp.gmail.com',
-  port: 465,
+  port: 587,
   secure: true, 
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS, 
   },
   tls: {
-    rejectUnauthorized: false
+    rejectUnauthorized: false,
+    minVersion: 'TLSv1.2'
   },
-  connectionTimeout: 5000, // Kam kar do (5 sec), taaki jaldi fail ho jaye agar ho raha ho
+  connectionTimeout: 5000, 
   greetingTimeout: 5000,
 });
 
