@@ -2,15 +2,33 @@ const nodemailer = require("nodemailer");
 require("dotenv").config();
 
 // Fix: Use host and port 465 for more stable SSL connections with Gmail
+// const transporter = nodemailer.createTransport({
+//   host: "smtp.gmail.com",
+//   port: 465,
+//   secure: true, // true for 465, false for other ports
+//   auth: {
+//     user: process.env.EMAIL_USER,
+//     pass: process.env.EMAIL_PASS, // Ensure this is a 16-character App Password
+//   },
+// });
+
 const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
+  service: 'gmail',
+  pool: true, // 💡 Naya: Connections reuse honge
+  host: 'smtp.gmail.com',
   port: 465,
-  secure: true, // true for 465, false for other ports
+  secure: true, 
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS, // Ensure this is a 16-character App Password
+    pass: process.env.EMAIL_PASS, 
   },
+  tls: {
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 5000, // Kam kar do (5 sec), taaki jaldi fail ho jaye agar ho raha ho
+  greetingTimeout: 5000,
 });
+
 
 // Verify connection configuration on startup
 transporter.verify((error, success) => {

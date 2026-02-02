@@ -72,9 +72,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// app.get("/ping", (req, res) => {
-//   res.status(200).send("Server is alive");
-// });
+app.get("/ping", (req, res) => {
+  res.status(200).send("Server is alive");
+});
 
 // 6. Routes
 app.use("/auth", require("./routes/auth"));
@@ -142,13 +142,13 @@ app.listen(PORT, () => {
   console.log(`🔗 \x1b[34mURL:\x1b[0m http://localhost:${PORT}`);
   console.log("========================================\n");
 
-  // // ✅ Self-Ping Logic: Har 14 minute mein server ko jagaye rakhega
-  // setInterval(() => {
-  //   const url = `https://pdf2sheet-auto-invoice-extraction-system.onrender.com/ping`;
+  // ✅ Self-Ping Logic: Har 14 minute mein server ko jagaye rakhega
+  setInterval(() => {
+    const url = `https://pdf2sheet-auto-invoice-extraction-system.onrender.com/ping`;
 
-  //   axios
-  //     .get(url)
-  //     .then(() => console.log("Pinged self to stay awake! ⚡"))
-  //     .catch((err) => console.error("Self-ping failed:", err.message));
-  // }, 840000); // 14 minutes (Render 15 min mein sota hai)
+    axios
+      .get(url)
+      .then(() => console.log("Pinged self to stay awake! ⚡"))
+      .catch((err) => console.error("Self-ping failed:", err.message));
+  }, 840000); // 14 minutes (Render 15 min mein sota hai)
 });

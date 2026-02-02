@@ -27,24 +27,18 @@ router.post("/", auth, upload.single("pdf"), async (req, res) => {
     if (!req.file) return res.status(400).json({ error: "No PDF uploaded" });
 
     const targetUserId = req.user?.id || req.user?.user?.id;
-    if (!targetUserId) throw new Error("User ID not found in token");
-
     const safeFilePath = req.file.path.replace(/\\/g, "/");
     const senderEmail = (req.body.email || "unknown@vendor.com").trim().toLowerCase();
 
     const currentUser = await User.findById(targetUserId);
     if (!currentUser) throw new Error("User profile not found");
 
-    log.data("User", currentUser.name);
-    log.data("Sender Email", senderEmail);
-
-    // 2. Read PDF & Extract
+    // 2. Read & Extract
     log.step("Processing PDF...");
     const text = await readPDF(req.file.path);
     const fields = extractFields(text);
-    log.data("AI Extracted Vendor", fields.vendor);
 
-    // 3. SMART VENDOR CHECK (FIXED)
+    // 3. Smart Vendor Check (Low confidence check fixed)
     const savedVendor = await Vendor.findOne({ 
       userId: targetUserId, 
       senderEmail,
@@ -52,27 +46,19 @@ router.post("/", auth, upload.single("pdf"), async (req, res) => {
     });
 
     let finalVendorName = fields.vendor;
-    let confidence = fields.confidence;
     let needsMapping = true;
 
     if (savedVendor) {
       log.success(`Exact template match found for ${fields.vendor}`);
-      finalVendorName = savedVendor.vendorName;
-      confidence = 1.0;
       needsMapping = false; 
-    } else if (fields.confidence >= 0.70) { // LOWERED THRESHOLD from 0.85 to 0.70 for better auto-sync
+    } else if (fields.confidence >= 0.70) {
       log.success(`Acceptable AI confidence for: ${fields.vendor}`);
       needsMapping = false;
-    } else {
-      log.warn(`Low confidence (< 0.70) detected: ${fields.vendor}`);
-      needsMapping = true;
     }
 
-    // 4. DATA CLEANING (Added more robust cleaning)
     const cleanTotal = parseFloat(fields.total?.toString().replace(/[^\d.-]/g, "")) || 0;
 
-    // 5. Save to MongoDB
-    log.step("Saving to Database...");
+    // 4. Save to Database
     const invoice = await Invoice.create({
       userId: targetUserId,
       senderEmail,
@@ -80,40 +66,31 @@ router.post("/", auth, upload.single("pdf"), async (req, res) => {
       invoiceNo: fields.invoiceNo || "N/A",
       date: fields.date || "N/A",
       total: cleanTotal,
-      confidence,
-      rawText: text,
+      confidence: fields.confidence,
       filePath: safeFilePath,
-      status: needsMapping ? "pending" : "processed", // Explicit status
       needsMapping
     });
 
-    // 6. Send Email
-    try {
-      await sendSuccessEmail(senderEmail, invoice);
-    } catch (err) {
-      log.warn(`Email skip: ${err.message}`);
-    }
-
-    // 7. Google Sheets Sync
-    // This now triggers if confidence is okay OR if it was a saved vendor
+    // 5. Google Sheets Sync (Isse pehle rakho email se)
     if (!needsMapping) {
       log.step("Syncing to Google Sheets...");
       try {
         const sheetToUse = currentUser.spreadsheetId || process.env.SPREADSHEET_ID;
-        
-        // Ensure appendInvoice handles the timestamp (as we fixed in the service file)
-        await appendInvoice(sheetToUse, invoice);
-        
-        log.success("Personal Google Sheet updated with Timestamp");
+        await appendInvoice(sheetToUse, invoice, {}); // safeMapping empty pass karo agar extracted hai
+        log.success("Google Sheet updated");
       } catch (err) {
         log.error("Sheets error: " + err.message);
-        // We don't crash the route if Sheets fails, just log it
       }
-    } else {
-      log.warn(`Skipping Sheets Sync: ${fields.vendor} requires manual mapping.`);
     }
 
+    // 🔥 FIX 1: Frontend ko turant response bhej do (Loader ruk jayega)
     res.json({ success: true, invoice });
+
+    // 🔥 FIX 2: Email ko BACKGROUND mein bhejo (Await hata diya)
+    // Response bhejne ke BAAD email try karega
+    sendSuccessEmail(senderEmail, invoice).catch(err => {
+      log.warn(`Background Email skip: ${err.message}`);
+    });
 
   } catch (error) {
     log.error("Route Error: " + error.message);
