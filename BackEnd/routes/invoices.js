@@ -29,7 +29,7 @@ const path = require("path");
 // @desc     Sari invoices nikalne ke liye (Sorted by latest)
 router.get("/history", auth, async (req, res) => {
   try {
-    const invoices = await Invoice.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    const invoices = await Invoice.find({ userId: req.user.id }).sort({ createdAt: -1 }).limit(10);
     res.json(invoices);
   } catch (err) {
     console.error("❌ History Fetch Error:", err.message);
