@@ -61,11 +61,19 @@ exports.extractFields = (text) => {
     }
 
     // 3. INVOICE / ORDER NUMBER
-    const invoicePatterns = [
-      /(?:Invoice Number|Invoice No|Inv No|Order Number|Order No)[:\s]+([A-Z0-9-]+)/i,
-      /Airtel\s*Black\s*ID\s*(\d+)/i,
-      /(?:Inv|Bill|Ref|Statement)\s*(?:No|#|Num)?[:\s]*([A-Z0-9/-]{5,})/i
-    ];
+const invoicePatterns = [
+  // 🎯 Amazon India Priority: Hamesha IN- se shuru hone wala 12-15 digit ka number
+  /\b(IN-[A-Z0-9-]+)\b/i, 
+  
+  // Normal patterns
+  /(?:Invoice Number|Invoice No|Inv No)[:\s]+([A-Z0-9-]+)/i,
+  /Airtel\s*Black\s*ID\s*(\d+)/i,
+  
+  // Order Number fallback (Sirf tab jab Invoice Number na mile)
+  /(?:Order Number|Order No)[:\s]+([A-Z0-9-]+)/i, 
+  
+  /(?:Inv|Bill|Ref|Statement)\s*(?:No|#|Num)?[:\s]*([A-Z0-9/-]{5,})/i
+];
 
     for (let pattern of invoicePatterns) {
       const match = cleanText.match(pattern);

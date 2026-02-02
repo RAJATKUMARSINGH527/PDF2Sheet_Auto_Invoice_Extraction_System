@@ -74,7 +74,7 @@ app.use("/auth", require("./routes/auth"));
 app.use("/upload", require("./routes/upload"));
 app.use("/vendor", require("./routes/vendor"));
 app.use("/invoices", require("./routes/invoices"));
-
+app.use("/sheets", require("./routes/sheets"));
 
 
 // Add this right before app.listen
